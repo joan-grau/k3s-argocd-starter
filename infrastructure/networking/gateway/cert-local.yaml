@@ -1,0 +1,27 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: cert-local
+  namespace: gateway
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+    argocd.argoproj.io/sync-options: Validate=false
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
+spec:
+  dnsNames:
+    - "*.local"
+  issuerRef:
+    group: cert-manager.io
+    kind: ClusterIssuer
+    name: selfsigned-cluster-issuer
+  secretName: cert-local
+  duration: 8760h
+  renewBefore: 720h
+  privateKey:
+    algorithm: RSA
+    size: 2048
+    rotationPolicy: Always
+  revisionHistoryLimit: 1
+  usages:
+    - digital signature
+    - key encipherment

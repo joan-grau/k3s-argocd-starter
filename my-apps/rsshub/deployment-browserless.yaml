@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: browserless
+  namespace: rsshub
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: browserless
+  template:
+    metadata:
+      labels:
+        app: browserless
+    spec:
+      containers:
+      - name: browserless
+        image: browserless/chrome:latest
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: DEFAULT_BLOCK_ADS
+          value: "true"
+        - name: DEFAULT_STEALTH
+          value: "true"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        securityContext:
+          capabilities:
+            add:
+            - SYS_ADMIN
+        livenessProbe:
+          httpGet:
+            path: /pressure
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /pressure
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: browserless
+  namespace: rsshub
+spec:
+  selector:
+    app: browserless
+  ports:
+  - port: 3000
+    targetPort: 3000

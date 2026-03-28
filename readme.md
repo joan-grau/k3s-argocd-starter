@@ -35,11 +35,8 @@ This starter kit provides a production-ready foundation for deploying applicatio
   - Storage support (OpenEBS works with ZFS or standard directories)
   - NFS and CIFS support (optional)
   - Open-iSCSI
-- Cloudflare account (for DNS and Tunnel)
-- Local DNS setup (one of the following):
-  - Local DNS server ([AdGuard Home setup guide](docs/adguard-home-setup.md))
-  - Router with custom DNS capabilities (e.g., Firewalla)
-  - Ability to modify hosts file on all devices
+- Cloudflare account (for DNS and public access via Tunnel)
+- Router with DHCP configuration access (to set DNS server)
 
 ## 🏗️ Architecture
 
@@ -75,18 +72,17 @@ graph TD
     end
     
     subgraph "User Applications"
-        AAS --> P[Privacy Apps]
-        AAS --> Web[Web Apps]
+        AAS --> SH[Smart Home]
+        AAS --> Content[Content]
+        AAS --> DNS[DNS]
         AAS --> Other[Other Apps]
         
-        P --> ProxiTok
-        P --> SearXNG
-        P --> LibReddit
-        
-        Web --> Nginx
-        Web --> Dashboard
+        SH --> Homebridge
+        Content --> RSSHub
+        DNS --> AdGuardHome
         
         Other --> HelloWorld
+        Other --> Nginx
     end
 
     style IP fill:#f9f,stroke:#333,stroke-width:2px
@@ -122,8 +118,8 @@ echo -e "xt_socket\niptable_raw" | sudo tee /etc/modules-load.d/cilium.conf
 ### 2. K3s Installation
 ```bash
 # Customize these values!
-export SETUP_NODEIP=192.168.101.176  # Your node IP
-export SETUP_CLUSTERTOKEN=randomtokensecret12343  # Strong token
+export SETUP_NODEIP=192.168.0.25   # joan's linux server actual IP ✅
+export SETUP_CLUSTERTOKEN=$(openssl rand -hex 32)
 
 curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="v1.33.3+k3s1" \
   INSTALL_K3S_EXEC="--node-ip $SETUP_NODEIP \
@@ -353,6 +349,30 @@ kubectl get secret cloudflare-api-token -n cert-manager -o jsonpath='{.data.api-
 ```
 
 ## 🛠️ Final Deployment
+
+### 1. Deploy AdGuard Home (DNS - Must Be First!)
+```bash
+# Deploy DNS server for *.local domain resolution
+kubectl apply -k my-apps/adguard-home/
+
+# Wait for DNS service to get LoadBalancer IP
+kubectl get svc adguard-home-dns -n adguard-home --watch
+# Wait until EXTERNAL-IP shows: 192.168.0.53
+
+# Configure your router's DHCP settings:
+# - Primary DNS: 192.168.0.53 (AdGuard Home in cluster)
+# - Secondary DNS: 8.8.8.8 (fallback when cluster is down)
+
+# Initial setup: Access http://192.168.0.53:3000
+# Complete the setup wizard, then configure DNS rewrites:
+# Filters → DNS rewrites → Add:
+#   *.local → 192.168.0.35 (your Gateway LoadBalancer IP)
+
+# Get Gateway IP:
+kubectl get svc gateway-internal -n gateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+```
+
+### 2. Deploy Infrastructure
 ```bash
 # Apply infrastructure components
 # Run from root of git repo
@@ -361,7 +381,10 @@ kubectl apply -f infrastructure/infrastructure-components-appset.yaml -n argocd
 
 # Wait for core services (5-30 mins for certs)
 kubectl wait --for=condition=Available deployment -l type=infrastructure --all-namespaces --timeout=1800s
+```
 
+### 3. Deploy Monitoring
+```bash
 # Deploy monitoring stack
 kubectl apply -f monitoring/monitoring-components-appset.yaml -n argocd
 
@@ -370,9 +393,15 @@ echo "Waiting for kube-prometheus-stack to become ready... (this may take a few 
 kubectl wait --for=condition=Available deployment -l app.kubernetes.io/name=grafana -n kube-prometheus-stack --timeout=600s
 kubectl wait --for=condition=Available deployment -l app.kubernetes.io/name=kube-state-metrics -n kube-prometheus-stack --timeout=600s
 kubectl wait --for=condition=Ready statefulset -l app.kubernetes.io/name=prometheus -n kube-prometheus-stack --timeout=600s
+```
 
-# Deploy applications
-kubectl apply -f my-apps/myapplications-appset.yaml
+### 4. Deploy Applications
+```bash
+# Deploy Homebridge and RSSHub
+kubectl apply -f my-apps/myapplications-appset.yaml -n argocd
+
+# For Homebridge data migration from Docker, see: docs/migration-guide.md
+# For RSSHub Cloudflare tunnel setup, see: docs/migration-guide.md
 ```
 
 ## 🔍 Verification
@@ -396,23 +425,28 @@ cilium connectivity test --all-flows
 ```
 
 **Access Endpoints:**
-- Argo CD: `https://argocd.$DOMAIN`
-- Grafana: `https://grafana.$DOMAIN`
-- Prometheus: `https://prometheus.$DOMAIN`
-- AlertManager: `https://alertmanager.$DOMAIN`
-- ProxiTok: `https://proxitok.$DOMAIN`
-- SearXNG: `https://search.$DOMAIN`
-- LibReddit: `https://reddit.$DOMAIN`
+
+*Local Network Access (via `.local` domains):*
+- AdGuard Home: `https://adguard.local` (DNS management)
+- Homebridge: `https://homebridge.local` (smart home)
+- Hello World: `https://hello-world.local` (test app)
+
+*Public Access (via Cloudflare Tunnel):*
+- RSSHub: `https://rss.pascualgrau.com` (or your configured domain)
+- Argo CD (optional): `https://argocd.$DOMAIN`
+- Grafana (optional): `https://grafana.$DOMAIN`
 
 ## 📦 Included Applications
 
-| Category       | Components                          |
-|----------------|-------------------------------------|
-| **Monitoring** | Prometheus, Grafana, Loki, Promtail |
-| **Privacy**    | ProxiTok, SearXNG, LibReddit        |
-| **Infra**      | Cilium, Gateway API, Cloudflared    |
-| **Storage**    | OpenEBS                             |
-| **Security**   | cert-manager, Argo CD Projects      |
+| Category       | Components                                      | Access Method          |
+|----------------|-------------------------------------------------|------------------------|
+| **Smart Home** | Homebridge                                      | Local (`.local`)       |
+| **Content**    | RSSHub (with Redis, Browserless)               | Public (Cloudflare)    |
+| **DNS**        | AdGuard Home                                    | Local (`.local`)       |
+| **Monitoring** | Prometheus, Grafana, Loki, Promtail            | Local or Public        |
+| **Infra**      | Cilium, Gateway API, Cloudflared, cert-manager | -                      |
+| **Storage**    | Longhorn                                        | -                      |
+| **Security**   | Argo CD Projects, TLS Certificates             | -                      |
 
 ## 🤝 Contributing
 Contributions welcome! Please:
@@ -424,6 +458,9 @@ Contributions welcome! Please:
 MIT License - Full text in [LICENSE](LICENSE)
 
 ## 🔧 Troubleshooting
+
+**Migrating from Docker Compose:**
+See [`docs/migration-guide.md`](docs/migration-guide.md) for detailed instructions on migrating Homebridge and RSSHub from Docker Compose to Kubernetes.
 
 **Common Issues:**
 ```bash

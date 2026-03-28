@@ -22,7 +22,7 @@ spec:
         image: ghcr.io/sharevb/it-tools:nightly@sha256:90ba32f6ab338df7ae4a072e5f2d11cb6c43a291ffa325d08216f459ffeeb6f0
         env: 
         - name: TZ
-          value: America/Detroit
+          value: Europe/Madrid
         ports:
         - name: http
           containerPort: 8080

@@ -1,129 +1,170 @@
 # AdGuard Home DNS Server Setup
 
-This guide explains how to set up AdGuard Home as a local DNS server to handle internal DNS resolution while using Cloudflare DNS as the upstream provider.
+This guide explains how to set up AdGuard Home **inside your Kubernetes cluster** to handle local `.local` domain resolution.
+
+## Overview
+
+AdGuard Home runs as a Kubernetes Deployment and provides:
+- DNS resolution for `*.local` domains → Gateway LoadBalancer
+- Ad blocking and privacy protection
+- DNS query logging and statistics
+- Web UI for management at `https://adguard.local`
 
 ## Prerequisites
 
-- Docker and Docker Compose installed
-- Root or admin access to your machine
-- Access to your router's configuration (optional)
+- Kubernetes cluster with this starter kit deployed
+- Gateway API and Cilium configured
+- Router with DHCP configuration access
 
-## Quick Start
+## Architecture
 
-1. Create a new directory for your AdGuard Home setup:
+```
+Your Devices
+    ↓ DNS Query: homebridge.local
+AdGuard Home (192.168.0.53)
+    ↓ *.local → Returns 192.168.0.35
+Gateway LoadBalancer (192.168.0.35)
+    ↓ HTTPRoute matches hostname
+Homebridge / RSSHub / etc.
+```
+
+## Deployment
+
+### 1. Deploy AdGuard Home
+
 ```bash
-mkdir adguard-home
-cd adguard-home
+# Deploy AdGuard Home to the cluster
+kubectl apply -k my-apps/adguard-home/
+
+# Wait for DNS service to get LoadBalancer IP
+kubectl get svc adguard-home-dns -n adguard-home --watch
+# Wait until EXTERNAL-IP shows: 192.168.0.53
 ```
 
-2. Create the following files in your directory:
+### 2. Verify Deployment
 
-`docker-compose.yml`:
-```yaml
-version: '3'
-services:
-  adguardhome:
-    image: adguard/adguardhome
-    container_name: adguardhome
-    ports:
-      - "53:53/tcp"
-      - "53:53/udp"
-      - "3000:3000/tcp"
-    volumes:
-      - ./config:/opt/adguardhome/conf
-      - ./work:/opt/adguardhome/work
-```
-
-`config/AdGuardHome.yaml`:
-```yaml
-dns:
-  bind_hosts:
-    - 0.0.0.0
-  port: 53
-  rewrites:
-    - domain: homepage.vanillax.xyz
-      answer: 192.168.10.21
-    - domain: argocd.vanillax.xyz
-      answer: 192.168.10.21
-    - domain: intgw.vanillax.xyz
-      answer: 192.168.10.21
-    - domain: nginx.vanillax.xyz
-      answer: 192.168.10.21
-    - domain: test.vanillax.xyz
-      answer: 192.168.10.21
-    - domain: extgw.vanillax.xyz
-      answer: 192.168.10.22
-  upstream_dns:
-    - https://1.1.1.1/dns-query
-    - https://1.0.0.1/dns-query
-```
-
-3. Start AdGuard Home:
 ```bash
-docker-compose up -d
+# Check pods are running
+kubectl get pods -n adguard-home
+
+# Check LoadBalancer IP
+kubectl get svc -n adguard-home
+# Expected:
+# NAME                 TYPE           EXTERNAL-IP    PORT(S)
+# adguard-home-dns     LoadBalancer   192.168.0.53   53/TCP,53/UDP
+# adguard-home-web     ClusterIP      10.43.x.x      80/TCP
 ```
 
-## Configuring Devices to Use AdGuard Home
+### 3. Initial Web UI Setup
 
-### Option 1: Router Configuration (Recommended)
-1. Log into your router's admin interface
-2. Find the DNS settings (usually under DHCP or Network settings)
-3. Set the primary DNS server to the IP address of the machine running AdGuard Home
-4. Save settings and restart the router if required
+Access AdGuard Home web interface for first-time setup:
 
-### Option 2: Individual Device Configuration
+**Before DNS is configured** (direct IP):
+```
+http://192.168.0.53:3000
+```
 
-#### Windows:
-1. Open Network & Internet settings
-2. Click on "Change adapter options"
-3. Right-click your network connection → Properties
-4. Select "Internet Protocol Version 4 (TCP/IPv4)" → Properties
-5. Select "Use the following DNS server addresses"
-6. Enter the IP address of your AdGuard Home server
-7. Click OK to save
+**After router DNS is configured** (via Gateway):
+```
+https://adguard.local
+```
 
-#### macOS:
-1. Open System Preferences → Network
-2. Select your active network connection
-3. Click "Advanced" → DNS
-4. Add (+) the IP address of your AdGuard Home server
-5. Click OK and Apply
+Complete the setup wizard:
+1. Create admin username and password
+2. Accept default ports (pre-configured)
+3. Complete setup
 
-#### Linux:
-Edit `/etc/resolv.conf` or use NetworkManager to set your DNS server to the IP address of your AdGuard Home server.
+### 4. Configure DNS Rewrites
 
-## Verification
-To verify your setup is working:
-1. Open a terminal/command prompt
-2. Try pinging an internal domain:
+After setup, go to **Filters** → **DNS rewrites** and add:
+
+| Domain | Answer |
+|--------|--------|
+| `*.local` | `192.168.0.35` |
+
+**Get your Gateway IP:**
 ```bash
-ping homepage.vanillax.xyz
+kubectl get svc gateway-internal -n gateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
 ```
-It should resolve to 192.168.10.21
+
+## Configure Router DHCP
+
+Update your router's DHCP DNS settings to point devices to AdGuard Home:
+
+- **Primary DNS**: `192.168.0.53` (AdGuard Home in cluster)
+- **Secondary DNS**: `8.8.8.8` (fallback when cluster is down)
+
+**Common router locations:**
+- **UniFi**: Settings → Networks → [Network] → DHCP → DNS Server
+- **Firewalla**: Network Settings → DHCP → DNS Servers
+- **pfSense**: Services → DHCP Server → DNS Servers
+- **OpenWRT**: Network → Interfaces → LAN → DHCP Server → Advanced → DNS
+
+## Testing & Verification
+
+```bash
+# Test local domain resolution
+nslookup homebridge.local
+# Should return: 192.168.0.35
+
+# Test public domain resolution (should still work)
+nslookup google.com
+
+# Test directly against AdGuard
+nslookup homebridge.local 192.168.0.53
+```
+
+## Adding New Local Domains
+
+When you add a new app to the cluster:
+
+1. Go to AdGuard **Filters** → **DNS rewrites**
+2. If you already have `*.local → 192.168.0.35` wildcard, no action needed
+3. Otherwise add: `myapp.local → 192.168.0.35`
 
 ## Troubleshooting
 
-### Common Issues:
-1. **Port 53 already in use**: 
-   - Check if another DNS service is running: `sudo lsof -i :53`
-   - Disable system resolved on Linux: `sudo systemctl disable systemd-resolved`
+### AdGuard Home not starting
+```bash
+kubectl get pods -n adguard-home
+kubectl logs -n adguard-home deployment/adguard-home
+kubectl get pvc -n adguard-home
+```
 
-2. **Can't access web interface**:
-   - Ensure port 3000 is accessible
-   - Check if AdGuard Home container is running: `docker ps`
+### LoadBalancer IP not assigned
+```bash
+# Verify IP pool includes .53
+kubectl get CiliumLoadBalancerIPPool -n kube-system
 
-3. **DNS not resolving**:
-   - Verify container is running: `docker-compose ps`
-   - Check container logs: `docker-compose logs`
-   - Ensure firewall allows port 53 TCP/UDP
+# Check L2 announcement
+kubectl get CiliumL2AnnouncementPolicy -n kube-system
+```
 
-### Getting Help
-If you encounter issues:
-1. Check container logs: `docker-compose logs adguardhome`
-2. Visit AdGuard Home's web interface: `http://[your-server-ip]:3000`
-3. Verify DNS settings on your device/router
+### DNS not resolving on devices
+```bash
+# Check device got the right DNS server
+# macOS/Linux:
+cat /etc/resolv.conf  # Should show: nameserver 192.168.0.53
+
+# Test DNS server directly
+ping 192.168.0.53
+nslookup homebridge.local 192.168.0.53
+```
+
+### Cluster down - DNS behaviour
+
+When Kubernetes cluster is down:
+- ✅ **Internet still works** — devices use secondary DNS (8.8.8.8)
+- ❌ **`.local` domains fail** — expected, cluster services are also down
+- No manual intervention needed — automatic DNS failover
 
 ## Security Notes
-- The web interface (port 3000) should not be exposed to the internet
-- Consider setting up authentication in AdGuard Home's web interface
-- Keep Docker and AdGuard Home updated regularly 
+
+- ✅ Web UI via HTTPS at `https://adguard.local` (self-signed cert)
+- ✅ DNS service (`192.168.0.53`) accessible only from local network
+- ⚠️ Set a strong admin password during initial setup
+
+## Related Documentation
+
+- [Migration Guide](migration-guide.md) — Migrating services to Kubernetes
+- [README](../readme.md) — Main cluster documentation

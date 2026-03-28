@@ -1,0 +1,17 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: adguard-home-tls
+  namespace: adguard-home
+spec:
+  secretName: adguard-home-tls
+  duration: 8760h
+  renewBefore: 720h
+  privateKey:
+    algorithm: RSA
+    size: 2048
+  dnsNames:
+    - adguard.local
+  issuerRef:
+    name: selfsigned-cluster-issuer
+    kind: ClusterIssuer

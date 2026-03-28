@@ -6,23 +6,23 @@ metadata:
 spec:
   addresses:
   - type: IPAddress
-    value: 192.168.101.21
+    value: 192.168.0.35
   gatewayClassName: cilium
   listeners:
     - name: http
       protocol: HTTP
       port: 80
-      hostname: "*.vanillax.xyz"
+      hostname: "*.local"
       allowedRoutes:
         namespaces:
           from: All
     - name: https
       protocol: HTTPS
       port: 443
-      hostname: "*.vanillax.xyz"
+      hostname: "*.local"
       tls:
         certificateRefs:
-          - name: cert-vanillax
+          - name: cert-local
             kind: Secret
             group: "" # required
       allowedRoutes:
