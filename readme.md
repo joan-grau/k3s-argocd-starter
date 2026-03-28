@@ -178,6 +178,9 @@ sha256sum --check cilium-linux-${CLI_ARCH}.tar.gz.sha256sum
 sudo tar xzvfC cilium-linux-${CLI_ARCH}.tar.gz /usr/local/bin
 rm cilium-linux-${CLI_ARCH}.tar.gz*
 
+# Install Helm
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
 # Helm install Cilium
 # use  helm install if first time, or helm upgrade if trying to update/upgrade/redo something 
 helm repo add cilium https://helm.cilium.io && helm repo update
@@ -202,6 +205,8 @@ ip a
 # - RPi: eth0
 # The interface should show your node's IP address, for example:
 #   enp1s0: <BROADCAST,MULTICAST,UP,LOWER_UP> ... inet 192.168.1.100/24
+
+# in my case interface is eno1
 
 # 3. Make note of your interface name for the CiliumL2AnnouncementPolicy
 # You'll need this when applying the infrastructure components via Argo CD

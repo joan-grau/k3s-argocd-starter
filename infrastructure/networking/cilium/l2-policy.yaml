@@ -10,5 +10,6 @@ spec:
     - ens.*
     - wlan.*
     - wlp.*
+    - eno.*
   loadBalancerIPs: true
   externalIPs: true
