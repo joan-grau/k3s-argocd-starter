@@ -9,7 +9,7 @@ spec:
     - name: gateway-internal
       namespace: gateway
   hostnames:
-    - "nginx.vanillax.xyz"
+    - "nginx.pascualgrau.com"
   rules:
     - matches:
         - path:
