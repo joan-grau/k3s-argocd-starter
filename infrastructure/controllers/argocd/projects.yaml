@@ -7,6 +7,7 @@ spec:
   description: Core infrastructure components
   sourceRepos:
     - https://github.com/joan-grau/k3s-argocd-starter.git
+    - https://github.com/joan-grau/k3s-argocd-starter
   destinations:
     - namespace: "*"
       server: "*"
@@ -31,6 +32,7 @@ spec:
   description: User applications
   sourceRepos:
     - https://github.com/joan-grau/k3s-argocd-starter.git
+    - https://github.com/joan-grau/k3s-argocd-starter
   destinations:
     - namespace: "*"
       server: "*"
@@ -55,6 +57,7 @@ spec:
   description: Monitoring and observability components
   sourceRepos:
     - https://github.com/joan-grau/k3s-argocd-starter.git
+    - https://github.com/joan-grau/k3s-argocd-starter
   destinations:
     - namespace: "*"
       server: "*"
