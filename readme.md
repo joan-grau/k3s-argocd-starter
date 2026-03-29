@@ -355,12 +355,31 @@ kubectl get secret cloudflare-api-token -n cert-manager -o jsonpath='{.data.api-
 
 ## 🛠️ Final Deployment
 
-### 1. Deploy AdGuard Home (DNS - Must Be First!)
+### 1. Deploy Infrastructure
 ```bash
-# Deploy DNS server for *.local domain resolution
+# Apply infrastructure components
+# Run from root of git repo
+kubectl apply -f infrastructure/controllers/argocd/projects.yaml -n argocd
+kubectl apply -f infrastructure/infrastructure-components-appset.yaml -n argocd
+
+# Watch ArgoCD sync progress
+kubectl get applications -n argocd -w
+
+# Wait for core services (5-30 mins for certs)
+kubectl wait --for=condition=Available deployment -l type=infrastructure --all-namespaces --timeout=1800s
+```
+
+This deploys: Cilium IP pool, cert-manager, Gateway, Longhorn, cloudflared.
+
+### 2. Deploy AdGuard Home (DNS)
+```bash
+# IMPORTANT: Before applying, comment out certificate.yaml and httproute.yaml
+# in my-apps/adguard-home/kustomization.yaml — cert-manager and Gateway
+# must be running first.
+# Deploy only: namespace, deployment, service, pvc
 kubectl apply -k my-apps/adguard-home/
 
-# Wait for DNS service to get LoadBalancer IP
+# Wait for DNS service to get LoadBalancer IP (assigned by Cilium IP pool)
 kubectl get svc adguard-home-dns -n adguard-home --watch
 # Wait until EXTERNAL-IP shows: 192.168.0.53
 
@@ -374,18 +393,12 @@ kubectl get svc adguard-home-dns -n adguard-home --watch
 #   *.local → 192.168.0.35 (your Gateway LoadBalancer IP)
 
 # Get Gateway IP:
-kubectl get svc gateway-internal -n gateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
-```
+kubectl get svc -n gateway --watch
+# Wait until gateway-internal shows EXTERNAL-IP: 192.168.0.35
 
-### 2. Deploy Infrastructure
-```bash
-# Apply infrastructure components
-# Run from root of git repo
-kubectl apply -f infrastructure/controllers/argocd/projects.yaml -n argocd
-kubectl apply -f infrastructure/infrastructure-components-appset.yaml -n argocd
-
-# Wait for core services (5-30 mins for certs)
-kubectl wait --for=condition=Available deployment -l type=infrastructure --all-namespaces --timeout=1800s
+# Once cert-manager and Gateway are confirmed running, uncomment
+# certificate.yaml and httproute.yaml in my-apps/adguard-home/kustomization.yaml
+# and push — ArgoCD will pick it up automatically.
 ```
 
 ### 3. Deploy Monitoring
