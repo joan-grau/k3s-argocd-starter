@@ -8,7 +8,7 @@ spec:
     - name: gateway-internal # Assuming you have an internal gateway, adjust if needed
       namespace: gateway # Assuming your gateway is in the 'gateway' namespace
   hostnames:
-    - "longhorn.local" # You can change this hostname
+    - "longhorn.lan"
   rules:
     - matches:
         - path:

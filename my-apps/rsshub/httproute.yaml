@@ -9,7 +9,7 @@ spec:
       namespace: gateway
       sectionName: https
   hostnames:
-    - "rsshub.local"
+    - "rsshub.lan"
   rules:
     - matches:
         - path:

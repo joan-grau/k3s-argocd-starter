@@ -11,7 +11,7 @@ spec:
     algorithm: RSA
     size: 2048
   dnsNames:
-    - rsshub.local
+    - rsshub.lan
   issuerRef:
     name: selfsigned-cluster-issuer
     kind: ClusterIssuer

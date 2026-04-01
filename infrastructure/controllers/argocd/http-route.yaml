@@ -8,7 +8,7 @@ spec:
     - name: gateway-internal
       namespace: gateway
   hostnames:
-    - "argocd.local"
+    - "argocd.lan"
   rules:
     - matches:
         - path:

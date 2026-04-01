@@ -9,7 +9,7 @@ spec:
       namespace: gateway
       sectionName: https
   hostnames:
-    - "adguard.local"
+    - "adguard.lan"
   rules:
     - matches:
         - path:
