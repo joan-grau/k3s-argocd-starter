@@ -15,6 +15,7 @@ spec:
       labels:
         app: homebridge
     spec:
+      hostNetwork: true
       containers:
       - name: homebridge
         image: homebridge/homebridge:2024-10-25
