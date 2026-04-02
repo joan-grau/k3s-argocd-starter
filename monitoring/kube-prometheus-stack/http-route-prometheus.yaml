@@ -9,7 +9,7 @@ spec:
     namespace: gateway
     sectionName: https # Must match your Gateway's listeners[].name
   hostnames:
-  - "prometheus.pascualgrau.com"
+  - "prometheus.lan"
   rules:
   - matches:
     - path:
