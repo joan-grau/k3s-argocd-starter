@@ -24,8 +24,8 @@ The `values.yaml` file is configured for a single-node, low-resource setup.
 
 ## HTTPRoute Configuration
 
-- **Grafana**: Accessible at `grafana.pascualgrau.com`.
-- **Prometheus**: Accessible at `prometheus.pascualgrau.com`.
+- **Grafana**: Accessible at `grafana.lan`.
+- **Prometheus**: Accessible at `prometheus.lan`.
 
 ## Usage
 
