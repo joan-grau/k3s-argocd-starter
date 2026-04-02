@@ -124,10 +124,10 @@ From your local network:
 
 ```bash
 # Test Homebridge (after DNS propagation)
-curl -k https://homebridge.local
+curl -k https://homebridge.lan
 
 # Test RSSHub locally (optional - mainly accessed via Cloudflare)
-curl -k https://rsshub.local/healthz
+curl -k https://rsshub.lan/healthz
 
 # Test RSSHub via Cloudflare tunnel (primary access method)
 curl https://rss.pascualgrau.com/healthz
@@ -137,7 +137,7 @@ curl https://rss.pascualgrau.com/healthz
 
 Update your IoT devices to use the new Homebridge URL:
 - **Old**: `http://192.168.0.25:8581`
-- **New**: `https://homebridge.local`
+- **New**: `https://homebridge.lan`
 
 Most smart home devices support custom server URLs. Check your device's network settings or Homebridge plugin configuration.
       claimName: homebridge-config
@@ -172,7 +172,7 @@ Update your Cloudflare tunnel configuration to point to the Kubernetes service:
 # Add or update:
 ingress:
   - hostname: rss.pascualgrau.com
-    service: http://rsshub.rsshub.svc.cluster.local:80
+    service: http://rsshub.rsshub.svc.cluster.lan:80
 ```
 
 Apply the changes:
@@ -193,8 +193,8 @@ kubectl get svc -n homebridge
 kubectl get svc -n rsshub
 
 # Test internal access
-kubectl run -it --rm debug --image=curlimages/curl --restart=Never -- curl http://homebridge.homebridge.svc.cluster.local
-kubectl run -it --rm debug --image=curlimages/curl --restart=Never -- curl http://rsshub.rsshub.svc.cluster.local/healthz
+kubectl run -it --rm debug --image=curlimages/curl --restart=Never -- curl http://homebridge.homebridge.svc.cluster.lan
+kubectl run -it --rm debug --image=curlimages/curl --restart=Never -- curl http://rsshub.rsshub.svc.cluster.lan/healthz
 ```
 
 ### 5. Test Access
@@ -203,10 +203,10 @@ From your local network:
 
 ```bash
 # Test Homebridge (after DNS propagation)
-curl -k https://homebridge.local
+curl -k https://homebridge.lan
 
 # Test RSSHub locally
-curl -k https://rsshub.local/healthz
+curl -k https://rsshub.lan/healthz
 
 # Test RSSHub via Cloudflare tunnel
 curl https://rss.pascualgrau.com/healthz
@@ -216,7 +216,7 @@ curl https://rss.pascualgrau.com/healthz
 
 Update your IoT devices to use the new Homebridge URL:
 - **Old**: `http://192.168.0.25:8581`
-- **New**: `https://homebridge.local`
+- **New**: `https://homebridge.lan`
 
 ## Rollback Plan
 
@@ -295,8 +295,8 @@ kubectl logs -n rsshub -l app=rsshub --tail=100
 ### DNS not resolving
 ```bash
 # From a client machine, check DNS resolution
-nslookup homebridge.local
-nslookup rsshub.local
+nslookup homebridge.lan
+nslookup rsshub.lan
 
 # Check AdGuard Home is running
 kubectl get pods -n adguard-home
@@ -306,11 +306,11 @@ kubectl logs -n adguard-home -l app=adguard-home
 kubectl get svc adguard-home-dns -n adguard-home
 
 # Verify DNS rewrites in AdGuard web UI
-# Access: https://adguard.local or http://192.168.0.53:3000
+# Access: https://adguard.lan or http://192.168.0.53:3000
 # Check: Filters → DNS rewrites
 
 # Test DNS directly
-nslookup homebridge.local 192.168.0.53
+nslookup homebridge.lan 192.168.0.53
 ```
 ## Notes
 
@@ -318,7 +318,7 @@ nslookup homebridge.local 192.168.0.53
 - **RSSHub**: Redis data is in Longhorn PVC, other components are stateless
 - **AdGuard Home**: DNS server runs in cluster, config stored in Longhorn PVC
 - **Cloudflare Tunnel**: External access to RSSHub via `rss.pascualgrau.com`
-- **Local Access**: All services accessible via `*.local` domains internally
+- **Local Access**: All services accessible via `*.lan` domains internally
 - **HTTPS**: Self-signed certificates via cert-manager for local access
 - **DNS Fallback**: If cluster is down, devices use secondary DNS (8.8.8.8) for internet access
 
@@ -326,8 +326,8 @@ nslookup homebridge.local 192.168.0.53
 
 | Service | Local URL | External URL | Purpose |
 |---------|-----------|--------------|---------|
-| **Homebridge** | `https://homebridge.local` | ❌ None | Smart home control |
-| **RSSHub** | `https://rsshub.local` | `https://rss.pascualgrau.com` | RSS feed generator |
+| **Homebridge** | `https://homebridge.lan` | ❌ None | Smart home control |
+| **RSSHub** | `https://rsshub.lan` | `https://rss.pascualgrau.com` | RSS feed generator |
 | **AdGuard Home** | `https://adguard.local` | ❌ None | DNS management UI |
 | **Gateway IP** | `192.168.0.35` | N/A | All `*.local` domains |
 | **DNS Server** | `192.168.0.53` | N/A | AdGuard Home |
