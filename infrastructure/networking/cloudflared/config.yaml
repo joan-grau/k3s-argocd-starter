@@ -4,5 +4,5 @@ metrics: 0.0.0.0:2000
 no-autoupdate: true
 ingress:
   - hostname: rss.pascualgrau.com
-    service: http://rsshub.rsshub.svc.cluster.local:1200
+    service: http://rsshub.rsshub.svc.cluster.local:80
   - service: http_status:404
