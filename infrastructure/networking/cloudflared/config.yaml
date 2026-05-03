@@ -5,4 +5,12 @@ no-autoupdate: true
 ingress:
   - hostname: rss.pascualgrau.com
     service: http://rsshub.rsshub.svc.cluster.local:80
+  - hostname: argocd.pascualgrau.com
+    service: http://argocd-server.argocd.svc.cluster.local:80
+  - hostname: grafana.pascualgrau.com
+    service: http://prometheus-grafana.kube-prometheus-stack.svc.cluster.local:80
+  - hostname: headlamp.pascualgrau.com
+    service: http://headlamp.kube-system.svc.cluster.local:80
+  - hostname: homebridge.pascualgrau.com
+    service: http://homebridge.homebridge.svc.cluster.local:80
   - service: http_status:404
