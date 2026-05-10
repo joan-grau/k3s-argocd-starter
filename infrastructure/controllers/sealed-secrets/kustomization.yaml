@@ -10,4 +10,5 @@ helmCharts:
     version: 2.16.2
     releaseName: sealed-secrets
     namespace: sealed-secrets
+    includeCRDs: true
     valuesFile: values.yaml
