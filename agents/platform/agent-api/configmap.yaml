@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agents-config
+  namespace: agent-api
+data:
+  models.yaml: |
+    tiers:
+      fast:
+        provider: openai
+        model: gpt-4o-mini
+        max_tokens: 1024
+        temperature: 0.3
+      standard:
+        provider: openai
+        model: gpt-4o
+        max_tokens: 4096
+        temperature: 0.5
+      reasoning:
+        provider: anthropic
+        model: claude-sonnet-4-20250514
+        max_tokens: 8192
+        temperature: 0.7
+
+  agents.yaml: |
+    agents:
+      hello-world:
+        name: Hello World Echo
+        description: Minimal echo agent for platform testing
+        graph: hello_world
+        default_tier: fast

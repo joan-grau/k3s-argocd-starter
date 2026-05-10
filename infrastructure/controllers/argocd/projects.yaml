@@ -72,3 +72,28 @@ spec:
       description: Admin role for monitoring project
       policies:
         - p, proj:monitoring:admin, applications, *, monitoring/*, allow
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: agents
+  namespace: argocd
+spec:
+  description: AI Agent platform and domain agents
+  sourceRepos:
+    - https://github.com/joan-grau/k3s-argocd-starter.git
+    - https://github.com/joan-grau/k3s-argocd-starter
+  destinations:
+    - namespace: "*"
+      server: "*"
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  roles:
+    - name: admin
+      description: Admin role for agents project
+      policies:
+        - p, proj:agents:admin, applications, *, agents/*, allow
