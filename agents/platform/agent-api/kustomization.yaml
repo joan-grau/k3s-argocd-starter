@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: agent-api
 resources:
   - namespace.yaml
+  - sealedsecret.yaml
   - configmap.yaml
   - deployment.yaml
   - service.yaml

@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: redis
 resources:
   - namespace.yaml
+  - sealedsecret.yaml
   - pvc.yaml
   - deployment.yaml
   - service.yaml
