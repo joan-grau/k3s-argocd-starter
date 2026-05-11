@@ -33,7 +33,7 @@ spec:
         - name: N8N_PROTOCOL
           value: https
         - name: WEBHOOK_URL
-          value: https://n8n.lan/
+          value: https://n8n.pascualgrau.com/
         - name: GENERIC_TIMEZONE
           value: Europe/Madrid
         - name: TZ

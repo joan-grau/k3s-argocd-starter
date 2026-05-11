@@ -13,4 +13,6 @@ ingress:
     service: http://headlamp.kube-system.svc.cluster.local:80
   - hostname: homebridge.pascualgrau.com
     service: http://homebridge.homebridge.svc.cluster.local:80
+  - hostname: n8n.pascualgrau.com
+    service: http://n8n.n8n.svc.cluster.local:5678
   - service: http_status:404
