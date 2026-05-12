@@ -29,3 +29,9 @@ data:
         description: Minimal echo agent for platform testing
         graph: hello_world
         default_tier: fast
+      assistant:
+        name: Personal Assistant
+        description: Conversational assistant with memory and multi-tier routing
+        graph: personal_assistant
+        default_tier: fast
+        memory: true
