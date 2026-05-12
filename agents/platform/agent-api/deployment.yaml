@@ -24,10 +24,6 @@ spec:
         - containerPort: 8000
           name: http
         env:
-        - name: DATABASE_URL
-          value: postgresql://agents:$(DB_PASSWORD)@postgresql.postgresql.svc.cluster.local:5432/agents
-        - name: REDIS_URL
-          value: redis://:$(REDIS_PASSWORD)@redis.redis.svc.cluster.local:6379/0
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
@@ -38,6 +34,10 @@ spec:
             secretKeyRef:
               name: agent-api-secrets
               key: redis-password
+        - name: DATABASE_URL
+          value: postgresql://agents:$(DB_PASSWORD)@postgresql.postgresql.svc.cluster.local:5432/agents
+        - name: REDIS_URL
+          value: redis://:$(REDIS_PASSWORD)@redis.redis.svc.cluster.local:6379/0
         - name: OPENAI_API_KEY
           valueFrom:
             secretKeyRef:
@@ -52,6 +52,8 @@ spec:
         - name: agents-config
           mountPath: /app/config
           readOnly: true
+        - name: tmp
+          mountPath: /tmp
         securityContext:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
@@ -78,3 +80,5 @@ spec:
       - name: agents-config
         configMap:
           name: agents-config
+      - name: tmp
+        emptyDir: {}
