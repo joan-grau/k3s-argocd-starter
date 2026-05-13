@@ -48,6 +48,12 @@ spec:
             secretKeyRef:
               name: agent-api-secrets
               key: anthropic-api-key
+        - name: DEEPSEEK_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: agent-api-secrets
+              key: deepseek-api-key
+              optional: true
         volumeMounts:
         - name: agents-config
           mountPath: /app/config
