@@ -30,7 +30,6 @@ data:
         provider: anthropic
         model: claude-opus-4-7
         max_tokens: 8192
-        temperature: 0.7
 
   agents.yaml: |
     agents:
