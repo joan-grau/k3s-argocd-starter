@@ -21,7 +21,7 @@ spec:
         fsGroup: 999
       containers:
       - name: postgresql
-        image: postgres:16-alpine
+        image: pgvector/pgvector:pg16
         ports:
         - containerPort: 5432
           name: postgres
@@ -40,6 +40,9 @@ spec:
         volumeMounts:
         - name: data
           mountPath: /var/lib/postgresql/data
+        - name: init-scripts
+          mountPath: /docker-entrypoint-initdb.d
+          readOnly: true
         resources:
           requests:
             memory: "256Mi"
@@ -67,3 +70,6 @@ spec:
       - name: data
         persistentVolumeClaim:
           claimName: postgresql-data
+      - name: init-scripts
+        configMap:
+          name: postgresql-init
