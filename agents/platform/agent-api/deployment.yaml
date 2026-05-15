@@ -54,6 +54,8 @@ spec:
               name: agent-api-secrets
               key: deepseek-api-key
               optional: true
+        - name: HOME
+          value: /tmp
         volumeMounts:
         - name: agents-config
           mountPath: /app/config
