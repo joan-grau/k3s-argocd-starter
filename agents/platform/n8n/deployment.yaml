@@ -58,6 +58,10 @@ spec:
             secretKeyRef:
               name: n8n-secrets
               key: encryption-key
+        - name: N8N_METRICS
+          value: "true"
+        - name: N8N_METRICS_PREFIX
+          value: "n8n_"
         volumeMounts:
         - name: data
           mountPath: /home/node/.n8n
