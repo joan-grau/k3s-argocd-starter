@@ -1,0 +1,292 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agent-platform-dashboard
+  namespace: kube-prometheus-stack
+  labels:
+    grafana_dashboard: "1"
+data:
+  agent-platform.json: |
+    {
+      "title": "Agent Platform",
+      "uid": "agent-platform",
+      "description": "LLM latency, token usage, cache hit rate, memory ops, and n8n workflow health",
+      "editable": true,
+      "graphTooltip": 1,
+      "refresh": "30s",
+      "schemaVersion": 38,
+      "tags": ["agents"],
+      "time": { "from": "now-3h", "to": "now" },
+      "timepicker": {},
+      "links": [],
+      "panels": [
+        {
+          "id": 1,
+          "type": "row",
+          "title": "LLM Performance",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+          "collapsed": false
+        },
+        {
+          "id": 2,
+          "title": "LLM p50 Latency by Tier (s)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 1 },
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": { "unit": "s", "min": 0 },
+            "overrides": []
+          },
+          "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.50, sum by (le, tier) (rate(agent_llm_request_duration_seconds_bucket[5m])))",
+              "legendFormat": "p50 {{tier}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "title": "LLM p95 Latency by Tier (s)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 },
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": { "unit": "s", "min": 0 },
+            "overrides": []
+          },
+          "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum by (le, tier) (rate(agent_llm_request_duration_seconds_bucket[5m])))",
+              "legendFormat": "p95 {{tier}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "title": "Token Rate by Tier (tokens/min)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 9 },
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": { "unit": "short", "min": 0 },
+            "overrides": []
+          },
+          "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+          "targets": [
+            {
+              "expr": "sum by (tier, token_type) (rate(agent_llm_tokens_total[5m])) * 60",
+              "legendFormat": "{{tier}} {{token_type}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "title": "LLM Requests/min by Tier",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 9 },
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": { "unit": "reqpm", "min": 0 },
+            "overrides": []
+          },
+          "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+          "targets": [
+            {
+              "expr": "sum by (tier) (rate(agent_llm_request_duration_seconds_count[5m])) * 60",
+              "legendFormat": "{{tier}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 10,
+          "type": "row",
+          "title": "Cache",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 17 },
+          "collapsed": false
+        },
+        {
+          "id": 11,
+          "title": "Cache Hit Rate by Tier (%)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 18 },
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": { "unit": "percentunit", "min": 0, "max": 1 },
+            "overrides": []
+          },
+          "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+          "targets": [
+            {
+              "expr": "sum by (tier) (rate(agent_cache_requests_total{result=\"hit\"}[5m])) / sum by (tier) (rate(agent_cache_requests_total[5m]))",
+              "legendFormat": "{{tier}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 12,
+          "title": "Cache Hits vs Misses (total)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 18 },
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": { "unit": "short", "min": 0 },
+            "overrides": []
+          },
+          "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+          "targets": [
+            {
+              "expr": "sum by (result, tier) (rate(agent_cache_requests_total[5m])) * 60",
+              "legendFormat": "{{result}} {{tier}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 20,
+          "type": "row",
+          "title": "Memory (Mem0)",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 26 },
+          "collapsed": false
+        },
+        {
+          "id": 21,
+          "title": "Memory Op p50/p95 Latency (s)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 27 },
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": { "unit": "s", "min": 0 },
+            "overrides": []
+          },
+          "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.50, sum by (le, operation) (rate(agent_memory_op_duration_seconds_bucket[5m])))",
+              "legendFormat": "p50 {{operation}}",
+              "refId": "A"
+            },
+            {
+              "expr": "histogram_quantile(0.95, sum by (le, operation) (rate(agent_memory_op_duration_seconds_bucket[5m])))",
+              "legendFormat": "p95 {{operation}}",
+              "refId": "B"
+            }
+          ]
+        },
+        {
+          "id": 22,
+          "title": "Memory Ops/min by Operation",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 27 },
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": { "unit": "reqpm", "min": 0 },
+            "overrides": []
+          },
+          "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+          "targets": [
+            {
+              "expr": "sum by (operation) (rate(agent_memory_op_duration_seconds_count[5m])) * 60",
+              "legendFormat": "{{operation}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 30,
+          "type": "row",
+          "title": "n8n Workflows",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 35 },
+          "collapsed": false
+        },
+        {
+          "id": 31,
+          "title": "Workflow Executions/min",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 36 },
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": { "unit": "reqpm", "min": 0 },
+            "overrides": []
+          },
+          "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+          "targets": [
+            {
+              "expr": "sum(rate(n8n_workflow_execution_duration_seconds_count[5m])) * 60",
+              "legendFormat": "executions",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 32,
+          "title": "Workflow Error Rate (%)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 36 },
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": { "unit": "percentunit", "min": 0, "max": 1 },
+            "overrides": []
+          },
+          "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+          "targets": [
+            {
+              "expr": "rate(n8n_workflow_execution_error_total[5m]) / (rate(n8n_workflow_execution_duration_seconds_count[5m]) + rate(n8n_workflow_execution_error_total[5m]))",
+              "legendFormat": "error rate",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 40,
+          "type": "row",
+          "title": "HTTP API",
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 44 },
+          "collapsed": false
+        },
+        {
+          "id": 41,
+          "title": "API Request Rate (req/min)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 45 },
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": { "unit": "reqpm", "min": 0 },
+            "overrides": []
+          },
+          "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+          "targets": [
+            {
+              "expr": "sum by (handler) (rate(http_requests_total{handler=~\"/agents/.*\"}[5m])) * 60",
+              "legendFormat": "{{handler}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "id": 42,
+          "title": "API p95 Latency (s)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 45 },
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": { "unit": "s", "min": 0 },
+            "overrides": []
+          },
+          "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum by (le, handler) (rate(http_request_duration_seconds_bucket{handler=~\"/agents/.*\"}[5m])))",
+              "legendFormat": "p95 {{handler}}",
+              "refId": "A"
+            }
+          ]
+        }
+      ]
+    }

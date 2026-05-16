@@ -9,6 +9,7 @@ resources:
 - http-route-prometheus.yaml
 - dashboards/k3s-cluster-overview-configmap.yaml
 - dashboards/dashboard-16450-configmap.yaml
+- dashboards/agent-platform-dashboard-configmap.yaml
 
 helmCharts:
 - name: kube-prometheus-stack
