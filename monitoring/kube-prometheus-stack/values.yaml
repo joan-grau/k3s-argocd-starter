@@ -59,16 +59,14 @@ grafana:
         allowUiUpdates: true
         disableDelete: false
         foldersFromFilesStructure: false
+    datasources:
+      defaultDatasourceEnabled: false
 
   additionalDataSources:
   - name: Prometheus
     type: prometheus
     url: http://prometheus-operated.kube-prometheus-stack.svc:9090
     isDefault: true
-
-  sidecar:
-    datasources:
-      defaultDatasourceEnabled: false
 
   dashboards:
     default:
