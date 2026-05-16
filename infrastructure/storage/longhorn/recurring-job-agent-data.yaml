@@ -1,0 +1,13 @@
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: agent-data-daily-snapshot
+  namespace: longhorn-system
+spec:
+  cron: "0 1 * * *"
+  task: snapshot
+  retain: 7
+  concurrency: 2
+  groups:
+    - agent-data
+  labels: {}

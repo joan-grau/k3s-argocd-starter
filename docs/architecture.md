@@ -1,6 +1,6 @@
-# K3s ArgoCD Starter — Repository Context
+# Architecture Reference
 
-> **Purpose of this file**: Single-source knowledge base so AI assistants and humans can understand this repo without scanning every file. Keep this file updated when architecture changes.
+> Single-source knowledge base for this repo. Update this file when the architecture changes.
 
 ## What This Repo Is
 
@@ -67,6 +67,11 @@ k3s-argocd-starter/
 │   ├── nginx/               ← Static site
 │   └── rsshub/              ← RSS feed aggregator (multi-container: app + redis + browserless)
 └── docs/                    ← Supplemental documentation
+    ├── architecture.md      ← This file
+    ├── adguard-home-setup.md
+    └── agents/
+        ├── platform-plan.md
+        └── memory-architecture.md
 ```
 
 ---
@@ -74,6 +79,7 @@ k3s-argocd-starter/
 ## How Deployment Works (GitOps Flow)
 
 ### ApplicationSet Pattern
+
 Four `ApplicationSet` resources auto-discover apps from directory structure:
 
 1. **`infrastructure/infrastructure-components-appset.yaml`** — Scans `infrastructure/{networking,storage,controllers}/*`
@@ -83,14 +89,18 @@ Four `ApplicationSet` resources auto-discover apps from directory structure:
 
 Each subdirectory becomes an Argo CD `Application`. The namespace is derived from `{{path.basename}}`.
 
-### Sync Wave Order (deployment priority)
-1. **-10**: cert-manager (TLS bootstrap)
-2. **-2**: Infrastructure (networking, storage, controllers, sealed-secrets)
-3. **0**: Monitoring
-4. **1**: User applications
-5. **2**: Agent platform and domain agents
+### Sync Wave Order
+
+| Wave | Scope |
+|------|-------|
+| -10 | cert-manager (TLS bootstrap — deploys first) |
+| -2 | Infrastructure (networking, storage, controllers, sealed-secrets) |
+| 0 | Monitoring |
+| 1 | User applications |
+| 2 | Agent platform and domain agents |
 
 ### Config Management
+
 - **Kustomize + Helm hybrid** via ArgoCD CMP plugin (`kustomize-build-with-helm`)
 - Each component has a `kustomization.yaml` that may include `helmCharts:` entries
 - Helm values are in `values.yaml` files alongside their `kustomization.yaml`
@@ -105,6 +115,7 @@ LAN      → DNS rewrite (AdGuard) → 192.168.0.35 → Cilium Gateway → HTTPR
 ```
 
 ### Key Components
+
 - **Cilium L2 Announcements**: Advertises LoadBalancer IPs (192.168.0.35, 192.168.0.53) to LAN
 - **IP Pool**: `192.168.0.35/32` (gateway), `192.168.0.53/32` (DNS)
 - **Gateway**: Single `gateway-internal` in namespace `gateway`, listens on HTTP/80 and HTTPS/443 for `*.lan`
@@ -112,13 +123,15 @@ LAN      → DNS rewrite (AdGuard) → 192.168.0.35 → Cilium Gateway → HTTPR
 - **Cloudflare Tunnel**: Routes specific public hostnames to internal services via `config.yaml`
 
 ### Public Services (via Cloudflare Tunnel)
+
 - `rss.pascualgrau.com` → rsshub
 - `argocd.pascualgrau.com` → argocd-server
 - `grafana.pascualgrau.com` → prometheus-grafana
 - `headlamp.pascualgrau.com` → headlamp
 - `homebridge.pascualgrau.com` → homebridge
 
-### Local Services (via Gateway *.lan)
+### Local Services (via Gateway `*.lan`)
+
 - `argocd.lan`, `grafana.lan`, `prometheus.lan`, `longhorn.lan`, `hubble.lan`
 - `hello-world.lan`, `adguard.lan`, `homebridge.lan`, `rsshub.lan`, `homepage.lan`, `it-tools.lan`
 - `n8n.lan`, `agent-api.lan`
@@ -149,38 +162,44 @@ LAN      → DNS rewrite (AdGuard) → 192.168.0.35 → Cilium Gateway → HTTPR
 ## Patterns & Conventions
 
 ### Adding a New App
+
 1. Create directory `my-apps/{app-name}/`
 2. Add `kustomization.yaml` listing all resources
 3. Add `namespace.yaml` (namespace = directory name)
 4. Add `deployment.yaml`, `service.yaml`
-5. Add `http-route.yaml` → parentRef `gateway-internal` in namespace `gateway`, hostname `{app}.lan`
+5. Add `httproute.yaml` → parentRef `gateway-internal` in namespace `gateway`, hostname `{app}.lan`
 6. (Optional) Add `pvc.yaml` with `storageClassName: longhorn`
 7. Commit and push — Argo CD auto-discovers and deploys
 
 ### Stateless App Template
+
 - Single Deployment (replicas: 1)
 - Service (ClusterIP)
 - HTTPRoute
 - Security: `runAsNonRoot: true`, `readOnlyRootFilesystem: true`
 
 ### Stateful App Template
+
 - Deployment with `strategy: Recreate`
 - PVC(s) with `storageClassName: longhorn`, `ReadWriteOnce`
 - Liveness/readiness probes
 - Resource requests and limits defined
 
 ### Multi-Container App (e.g., RSSHub)
+
 - All deployments in same namespace
 - Inter-service communication via DNS (`redis:6379`, `browserless:3000`)
 - Each deployment has its own Service
 - Single HTTPRoute for the main app
 
 ### Helm-based App (e.g., Headlamp)
+
 - `kustomization.yaml` with `helmCharts:` section
 - `values.yaml` for Helm overrides
 - Additional raw resources alongside Helm chart
 
 ### Resource Limits Convention
+
 - All containers have `requests` and `limits` defined
 - Typical small app: 50-100m CPU, 64-256Mi memory
 - Storage-intensive: up to 500m CPU, 1Gi memory
@@ -190,51 +209,14 @@ LAN      → DNS rewrite (AdGuard) → 192.168.0.35 → Cilium Gateway → HTTPR
 ## Security Model
 
 - **Pod Security**: Non-root users, read-only filesystems, no privilege escalation
-- **TLS**: Self-signed for LAN (*.lan via cert-manager), Let's Encrypt for public (via Cloudflare DNS01)
-- **Secrets**: Created manually outside GitOps (Cloudflare API token, app secrets)
-- **Sealed Secrets**: Bitnami Sealed Secrets for GitOps-safe secret management
+- **TLS**: Self-signed for LAN (`*.lan` via cert-manager), Let's Encrypt for public (via Cloudflare DNS01)
+- **Secrets**: Bitnami Sealed Secrets for GitOps-safe secret management — API keys never in plaintext git
 - **RBAC**: Four Argo CD AppProjects with separate permissions (infrastructure, monitoring, applications, agents)
 - **Network**: Cilium policies, L2 isolation per namespace
 
 ---
 
-## Secrets (NOT in repo, created manually)
-
-| Secret | Namespace | Purpose |
-|--------|-----------|---------|
-| `cloudflare-api-token` | cert-manager | DNS01 challenge for Let's Encrypt |
-| Cloudflare tunnel credentials | cloudflared | Tunnel authentication |
-| `rsshub-secrets` | rsshub | Instagram cookies |
-| ArgoCD admin password | argocd | Auto-generated by Helm |
-| `postgresql-credentials` | postgresql | PostgreSQL password for agents DB |
-| `redis-credentials` | redis | Redis password |
-| `n8n-secrets` | n8n | DB password + encryption key |
-| `agent-api-secrets` | agent-api | DB, Redis, OpenAI, Anthropic API keys |
-
----
-
-## Agent Platform
-
-The agents layer (`agents/`) is a multi-tier AI agent runtime:
-
-- **Argo CD project**: `agents` (sync-wave 2, deploys after monitoring)
-- **Secret management**: Sealed Secrets controller under `infrastructure/controllers/sealed-secrets/`
-- **State stores**: PostgreSQL 16 (schemas per agent) + Redis 7 (key-prefix isolation)
-- **Workflow engine**: n8n (backed by PostgreSQL, Telegram/webhook triggers)
-- **Agent runtime**: FastAPI + LangGraph in `joan-grau/agent-api` (separate repo)
-  - Multi-tier model registry: fast (GPT-4o-mini), standard (GPT-4o), reasoning (Claude Sonnet)
-  - Each LangGraph node picks its own model tier based on task complexity
-  - Agent definitions loaded from ConfigMap (`agents-config`)
-- **Channel flow**: Telegram → n8n webhook → `POST /agents/{id}/invoke` → LangGraph → n8n → Telegram reply
-
-### Future domain agents
-- Finance advisor (read-heavy, approval-gated)
-- Shopify assistant (draft emails, shipment triage)
-- Fitness advisor (habit tracking, personal data)
-
----
-
-## Quick Reference Commands
+## Common kubectl Commands
 
 ```bash
 # Check cluster
@@ -266,13 +248,10 @@ kubectl logs -n <namespace> deployment/<name>
 |------|---------|
 | `kustomization.yaml` | Entry point for each component (lists resources, helmCharts) |
 | `values.yaml` | Helm chart overrides |
-| `namespace.yaml` / `ns.yaml` | Namespace definition |
-| `http-route.yaml` / `httproute.yaml` | Gateway API ingress rule |
+| `namespace.yaml` | Namespace definition |
+| `httproute.yaml` | Gateway API ingress rule |
 | `deployment.yaml` | Workload definition |
 | `service.yaml` | ClusterIP service |
 | `pvc.yaml` | Persistent volume claim |
 | `certificate.yaml` | cert-manager Certificate resource |
-
----
-
-*Last updated: 2025-05-10*
+| `sealedsecret.yaml` | Bitnami Sealed Secret (GitOps-safe) |

@@ -3,6 +3,8 @@ kind: PersistentVolumeClaim
 metadata:
   name: redis-data
   namespace: redis
+  labels:
+    recurring-job-group.longhorn.io/agent-data: enabled
 spec:
   accessModes:
     - ReadWriteOnce

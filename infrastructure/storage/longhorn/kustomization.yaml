@@ -4,6 +4,7 @@ namespace: longhorn-system
 resources:
   - namespace.yaml
   - httproute.yaml
+  - recurring-job-agent-data.yaml
 helmCharts:
   - name: longhorn
     repo: https://charts.longhorn.io
