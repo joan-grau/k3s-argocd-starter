@@ -37,7 +37,7 @@ spec:
         - name: DATABASE_URL
           value: postgresql://agents:$(DB_PASSWORD)@postgresql.postgresql.svc.cluster.local:5432/agents
         - name: REDIS_URL
-          value: redis://:$(REDIS_PASSWORD)@redis.redis.svc.cluster.local:6379/0
+          value: redis://redis.redis.svc.cluster.local:6379/0
         - name: OPENAI_API_KEY
           valueFrom:
             secretKeyRef:
