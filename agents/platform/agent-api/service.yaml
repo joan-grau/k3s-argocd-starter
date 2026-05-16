@@ -3,6 +3,8 @@ kind: Service
 metadata:
   name: agent-api
   namespace: agent-api
+  labels:
+    app: agent-api
 spec:
   selector:
     app: agent-api
