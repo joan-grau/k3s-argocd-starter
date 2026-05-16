@@ -44,3 +44,19 @@ data:
         graph: personal_assistant
         default_tier: fast
         memory: true
+
+  memory-lifecycle.yaml: |
+    # Memory lifecycle thresholds — read by n8n workflows at runtime.
+    # Change values here and sync ArgoCD; n8n picks up on the next run.
+    lifecycle:
+      compaction:
+        # Run daily. Merge duplicate / overlapping memories via GPT-4o-mini.
+        schedule: "0 3 * * *"          # 03:00 UTC daily
+        min_memories_to_compact: 5     # skip if fewer memories than this
+      expiry:
+        # Run monthly. Delete memories not updated in stale_days.
+        schedule: "0 4 1 * *"          # 04:00 UTC on the 1st of each month
+        stale_days: 90
+      agents:
+        # List of agent_ids to run lifecycle jobs for.
+        - assistant
