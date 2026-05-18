@@ -51,18 +51,21 @@ n8n deployed and connected to PostgreSQL. Telegram bot configured as first notif
 ### ✅ Phase 4 — Agent service boundary (agent-api)
 FastAPI + LangGraph service with multi-tier LLM routing (GPT-4o-mini fast, DeepSeek-V3 complex, DeepSeek-R1 reasoning, Claude Opus expert). Personal assistant agent with full memory stack implemented (see [memory-architecture.md](memory-architecture.md)).
 
-### ⬜ Phase 5 — Observability and guardrails
-- Add agent-specific Prometheus metrics: workflow failures, approval backlog, LLM provider latency, token usage, cache hit rate
-- Add per-namespace resource quotas so a broken workflow cannot starve the cluster
-- Add PostgreSQL and Redis backup coverage before storing real personal or business data
+### ✅ Phase 5 — Observability and guardrails
+- `agent-api` instrumented with Prometheus: LLM latency (p50/p95 by tier), token counters, cache hit/miss rate, memory op latency
+- ServiceMonitors for `agent-api` and `n8n`; both active targets in Prometheus
+- Per-namespace ResourceQuotas: agent-api, n8n, postgresql, redis
+- Longhorn `RecurringJob` daily snapshots (retain 7) on postgresql and redis PVCs
+- Grafana "Agent Platform" dashboard: LLM Performance, Cache, Memory/Mem0, n8n Workflows, HTTP API rows — all showing live data
 
 ### ⬜ Phase 6 — First domain agent: Finance Advisor
-Start with read-heavy, low-risk:
-- Watchlists, price and indicator monitoring, daily summaries via Telegram
-- Explicit approval required before any side-effecting action
-- No autonomous trading or order placement
-
-After finance is stable: Shopify assistant (draft-only email replies, shipment triage) → fitness advisor (personal data, long-term habit tracking).
+- **Data**: yfinance (free, no API key) — stocks, ETFs, crypto, multi-exchange
+- **Watchlist**: PostgreSQL `watchlist` table; seeded with 20 tickers (US, HK, Warsaw, Madrid, London, Frankfurt)
+- **Tools**: `get_quote`, `get_technical_indicators` (RSI/MA20/MA50), `get_daily_summary` (batch), `add/remove_from_watchlist`
+- **Agent**: `src/agents/finance.py` — ReAct (ToolNode) graph, keyword-based tier routing (fast / ds-fast / ds-reasoning)
+- **Daily summary**: n8n cron 08:00 CET weekdays → `POST /agents/finance/invoke` → Telegram
+- **Interactive**: Telegram router updated with finance intent detection → routes finance queries to `/agents/finance/invoke`
+- **Scope**: Fully read-only. No broker integration. Portfolio tracking deferred to Phase 6b.
 
 ---
 

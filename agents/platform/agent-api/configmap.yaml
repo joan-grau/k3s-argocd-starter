@@ -44,6 +44,11 @@ data:
         graph: personal_assistant
         default_tier: fast
         memory: true
+      finance:
+        name: Finance Advisor
+        description: Market data, watchlist management, and daily summaries via yfinance
+        graph: finance
+        default_tier: fast
 
   memory-lifecycle.yaml: |
     # Memory lifecycle thresholds — read by n8n workflows at runtime.
