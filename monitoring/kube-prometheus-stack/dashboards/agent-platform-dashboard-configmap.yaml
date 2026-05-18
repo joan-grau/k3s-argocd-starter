@@ -207,38 +207,38 @@ data:
         },
         {
           "id": 31,
-          "title": "Workflow Executions/min",
+          "title": "Active Workflows",
           "type": "timeseries",
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 36 },
           "datasource": "Prometheus",
           "fieldConfig": {
-            "defaults": { "unit": "reqpm", "min": 0 },
+            "defaults": { "unit": "short", "min": 0 },
             "overrides": []
           },
           "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
           "targets": [
             {
-              "expr": "sum(rate(n8n_workflow_execution_duration_seconds_count[5m])) * 60",
-              "legendFormat": "executions",
+              "expr": "n8n_active_workflow_count",
+              "legendFormat": "active workflows",
               "refId": "A"
             }
           ]
         },
         {
           "id": 32,
-          "title": "Workflow Error Rate (%)",
+          "title": "n8n Heap Memory Used",
           "type": "timeseries",
           "gridPos": { "h": 8, "w": 12, "x": 12, "y": 36 },
           "datasource": "Prometheus",
           "fieldConfig": {
-            "defaults": { "unit": "percentunit", "min": 0, "max": 1 },
+            "defaults": { "unit": "bytes", "min": 0 },
             "overrides": []
           },
           "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
           "targets": [
             {
-              "expr": "rate(n8n_workflow_execution_error_total[5m]) / (rate(n8n_workflow_execution_duration_seconds_count[5m]) + rate(n8n_workflow_execution_error_total[5m]))",
-              "legendFormat": "error rate",
+              "expr": "n8n_nodejs_heap_size_used_bytes",
+              "legendFormat": "heap used",
               "refId": "A"
             }
           ]
