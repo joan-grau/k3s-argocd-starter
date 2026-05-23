@@ -1,0 +1,50 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-telegram-tables
+  namespace: postgresql
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      securityContext:
+        runAsUser: 999
+        runAsGroup: 999
+        runAsNonRoot: true
+      containers:
+      - name: migrate
+        image: pgvector/pgvector:pg16
+        command:
+        - psql
+        - --host=postgresql.postgresql.svc.cluster.local
+        - --username=agents
+        - --dbname=agents
+        - -c
+        - >-
+          CREATE TABLE IF NOT EXISTS telegram_bots (
+            bot_id    TEXT PRIMARY KEY,
+            bot_name  TEXT NOT NULL,
+            agent_id  TEXT NOT NULL
+          );
+          CREATE TABLE IF NOT EXISTS telegram_users (
+            bot_id   TEXT NOT NULL REFERENCES telegram_bots(bot_id),
+            chat_id  TEXT NOT NULL,
+            user_id  TEXT NOT NULL,
+            PRIMARY KEY (bot_id, chat_id)
+          );
+        env:
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgresql-credentials
+              key: password
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "10m"
+          limits:
+            memory: "64Mi"
+            cpu: "50m"
