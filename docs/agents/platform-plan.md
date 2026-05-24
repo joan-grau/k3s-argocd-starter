@@ -60,8 +60,8 @@ FastAPI + LangGraph service with multi-tier LLM routing (GPT-4o-mini fast, DeepS
 
 ### ⬜ Phase 6 — First domain agent: Finance Advisor
 - **Data**: yfinance (free, no API key) — stocks, ETFs, crypto, multi-exchange
-- **Watchlist**: PostgreSQL `watchlist` table; seeded with 20 tickers (US, HK, Warsaw, Madrid, London, Frankfurt)
-- **Tools**: `get_quote`, `get_technical_indicators` (RSI/MA20/MA50), `get_daily_summary` (batch), `add/remove_from_watchlist`
+- **Watchlist**: `watchlist.json` in the agent's private workspace — managed by the agent via workspace file tools
+- **Tools**: `get_quote`, `get_technical_indicators` (RSI/MA20/MA50), `get_daily_summary` (batch from workspace watchlist)
 - **Agent**: `src/agents/finance.py` — ReAct (ToolNode) graph, keyword-based tier routing (fast / ds-fast / ds-reasoning)
 - **Daily summary**: n8n cron 08:00 CET weekdays → `POST /agents/finance/invoke` → Telegram
 - **Interactive**: Telegram router updated with finance intent detection → routes finance queries to `/agents/finance/invoke`

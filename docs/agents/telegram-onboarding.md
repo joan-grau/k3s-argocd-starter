@@ -153,7 +153,7 @@ ON CONFLICT (bot_id, chat_id) DO NOTHING;
 |--------|------|-------------|
 | `bot_id` | TEXT FK → `telegram_bots.bot_id` | Which bot this authorization applies to. The same person must be registered separately for each bot they want to use. |
 | `chat_id` | TEXT | Numeric Telegram ID of the person. Unique per person (not per device). Obtained via `getUpdates` or @userinfobot. |
-| `user_id` | TEXT | Internal user identity used by agents for memory, watchlists, and per-user data. Must match the `user_id` used when seeding agent-specific tables (e.g. `watchlist`). |
+| `user_id` | TEXT | Internal user identity used by agents for long-term memory and workspace isolation. Each agent gets a sandboxed workspace at `/workspace/{user_id}/{agent_id}/`. |
 
 > `(bot_id, chat_id)` is the primary key — one user can be registered on multiple bots with the same or different `user_id`.
 

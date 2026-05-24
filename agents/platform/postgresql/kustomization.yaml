@@ -9,6 +9,5 @@ resources:
   - deployment.yaml
   - service.yaml
   - job-enable-pgvector.yaml
-  - job-create-watchlist.yaml
   - job-create-telegram-tables.yaml
   - resourcequota.yaml
