@@ -56,6 +56,14 @@ spec:
               name: agent-api-secrets
               key: deepseek-api-key
               optional: true
+        - name: N8N_BASE_URL
+          value: "https://n8n.pascualgrau.com"
+        - name: N8N_SCHEDULED_DELIVERY_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: agent-api-secrets
+              key: n8n-schedule-delivery-secret
+              optional: true
         - name: HOME
           value: /tmp
         volumeMounts:
