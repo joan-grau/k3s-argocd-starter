@@ -17,6 +17,8 @@ spec:
         runAsUser: 1000
         runAsGroup: 1000
         runAsNonRoot: true
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
       containers:
       - name: agent-api
         image: ghcr.io/joan-grau/agent-api:latest
