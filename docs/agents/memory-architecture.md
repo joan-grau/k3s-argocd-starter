@@ -76,10 +76,9 @@ All agents share this identical flow — defined once in `src/agents/base.py` an
 - Memory scoped by `user_id` (Telegram user ID) + `agent_id` (e.g. `assistant`) — fully isolated
 - Embeddings: `text-embedding-3-small` (1536 dims); extraction LLM: GPT-4o-mini
 
-**Known API asymmetry** (mem0ai library):
-- `search()` → requires `filters={"user_id": ..., "agent_id": ...}`
-- `add()` → uses top-level kwargs `user_id=..., agent_id=...`
-- `get_all()` → requires `filters={"user_id": ..., "agent_id": ...}`
+**Mem0 API** — both `search()` and `add()` take `user_id` and `agent_id` as direct kwargs:
+- `search(query, user_id=..., agent_id=..., limit=N)` — built-in fields, NOT `filters={}`
+- `add(messages, user_id=..., agent_id=...)` — top-level kwargs
 
 **Container constraint**: `readOnlyRootFilesystem: true` → `HOME=/tmp` env var required so mem0 can write `~/.mem0` config dir.
 
