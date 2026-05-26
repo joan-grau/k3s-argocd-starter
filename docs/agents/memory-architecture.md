@@ -76,9 +76,9 @@ All agents share this identical flow — defined once in `src/agents/base.py` an
 - Memory scoped by `user_id` (Telegram user ID) + `agent_id` (e.g. `assistant`) — fully isolated
 - Embeddings: `text-embedding-3-small` (1536 dims); extraction LLM: GPT-4o-mini
 
-**Mem0 API** — both `search()` and `add()` take `user_id` and `agent_id` as direct kwargs:
-- `search(query, user_id=..., agent_id=..., limit=N)` — built-in fields, NOT `filters={}`
-- `add(messages, user_id=..., agent_id=...)` — top-level kwargs
+**Mem0 isolation strategy** — `agent_id` is namespaced into `user_id` rather than relying on Mem0's built-in `agent_id` filtering, which is unreliable across pgvector backend versions:
+- Stored and searched with `user_id=f"{user_id}:{agent_id}"` (e.g. `"user-joan:assistant"`, `"user-joan:finance"`)
+- Each `(user, agent)` pair is a completely separate Mem0 namespace — leakage between agents is structurally impossible
 
 **Container constraint**: `readOnlyRootFilesystem: true` → `HOME=/tmp` env var required so mem0 can write `~/.mem0` config dir.
 
