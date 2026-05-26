@@ -79,6 +79,7 @@ All agents share this identical flow — defined once in `src/agents/base.py` an
 **Mem0 isolation strategy** — `agent_id` is namespaced into `user_id` rather than relying on Mem0's built-in `agent_id` filtering, which is unreliable across pgvector backend versions:
 - Stored and searched with `user_id=f"{user_id}:{agent_id}"` (e.g. `"user-joan:assistant"`, `"user-joan:finance"`)
 - Each `(user, agent)` pair is a completely separate Mem0 namespace — leakage between agents is structurally impossible
+- **API note**: `add()` takes `user_id` as a top-level kwarg; `search()` requires `filters={"user_id": ...}` — the asymmetry is intentional in the installed version
 
 **Container constraint**: `readOnlyRootFilesystem: true` → `HOME=/tmp` env var required so mem0 can write `~/.mem0` config dir.
 
