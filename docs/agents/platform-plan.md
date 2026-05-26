@@ -93,11 +93,23 @@ Classification happens in the `classify` node before routing. Each tier has its 
 
 ## Adding a Domain Agent
 
-1. Create `agents/domain/{agent-name}/` directory with standard K8s manifests
-2. Register the agent in `agent-api/config/agents.yaml`
-3. Implement the LangGraph graph in `agent-api/src/agents/{agent_name}.py`
-4. Add n8n workflow(s) for its triggers and approval routing
-5. Commit — Argo CD auto-discovers and deploys
+1. Create `agents/domain/{agent-name}/` with standard K8s manifests (namespace, deployment, service, httproute, sealedsecret)
+2. Register the agent in `agents/platform/agent-api/configmap.yaml` under `agents:` — set `memory: true` for production agents
+3. Implement the agent in `agent-api/src/agents/{agent_name}.py` using the shared baseline:
+   ```python
+   from src.agents.base import BASE_TOOLS, build_agent_graph
+   # from src.tools.my_tools import tool_a, tool_b  # add domain-specific tools if needed
+
+   SYSTEM_PROMPT = "You are a ..."
+   TOOLS = [*BASE_TOOLS]  # or [tool_a, tool_b, *BASE_TOOLS]
+
+   builder = build_agent_graph(agent_id="my_agent", system_prompt=SYSTEM_PROMPT, tools=TOOLS)
+   graph = builder.compile()
+   ```
+   The agent inherits automatically: LLM 5-tier routing, Mem0 long-term memory, Redis cache, Prometheus metrics, rolling summarization, workspace tools, and schedule tools.
+4. If the agent needs memory lifecycle jobs, add `{user_id, agent_id}` pairs to the `memory-lifecycle.json` n8n workflow
+5. Add n8n workflow(s) for triggers (cron, Telegram intent, webhook, approval loops)
+6. Commit — Argo CD auto-discovers and deploys
 
 ---
 

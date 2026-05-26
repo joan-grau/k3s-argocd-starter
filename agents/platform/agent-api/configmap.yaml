@@ -32,6 +32,18 @@ data:
         max_tokens: 8192
 
   agents.yaml: |
+    # ---------------------------------------------------------------------------
+    # Agent baseline (applies to all production agents — memory: true required)
+    #
+    # Every production agent on this platform includes:
+    #   - Conversation history  : PostgreSQL checkpointer, scoped per (user, thread)
+    #   - Long-term memory      : Mem0 vector memories, scoped per (user, agent_id)
+    #   - Rolling summarization : keeps context bounded at SUMMARY_THRESHOLD messages
+    #   - Workspace tools       : read/write/list/delete files in a private workspace
+    #   - Schedule tools        : create/update/delete/list recurring jobs
+    #
+    # Only demo/test agents (hello-world) are exempt.
+    # ---------------------------------------------------------------------------
     agents:
       hello-world:
         name: Hello World Echo
@@ -49,6 +61,7 @@ data:
         description: Market data, watchlist management, and daily summaries via yfinance
         graph: finance
         default_tier: fast
+        memory: true
 
   memory-lifecycle.yaml: |
     # Memory lifecycle thresholds — read by n8n workflows at runtime.
@@ -65,3 +78,4 @@ data:
       agents:
         # List of agent_ids to run lifecycle jobs for.
         - assistant
+        - finance

@@ -46,10 +46,10 @@ Priority trimming order when over budget: oldest recent messages → summary →
 ## Graph Flow
 
 ```
-classify → retrieve_memories → route_by_complexity
-  → respond_{trivial|simple|complex|reasoning|expert}
-  → store_memories → maybe_summarize → END
+classify → retrieve_memories → agent → store_memories → maybe_summarize → END
 ```
+
+All agents share this identical flow — defined once in `src/agents/base.py` and wired by `build_agent_graph()`. The `agent` node is a ReAct loop: it calls the LLM (bound with the agent's tools), executes any tool calls, and repeats until the LLM responds with no tool calls.
 
 ---
 
@@ -57,17 +57,17 @@ classify → retrieve_memories → route_by_complexity
 
 ### ✅ Phase 1 — Conversation Summarization
 
-**File**: `agent-api/src/agents/personal_assistant.py`
+**File**: `agent-api/src/agents/base.py` (`make_maybe_summarize`)
 
-- `AgentState` has `summary: str` field (persisted by checkpointer)
+- `BaseState` has `summary: str` field (persisted by checkpointer)
 - `maybe_summarize` node: triggers when `len(history) > SUMMARY_THRESHOLD` (20 messages)
 - Summarizes oldest messages with GPT-4o-mini, keeps last `KEEP_RECENT=6` raw
 - Token counting via `tiktoken` before every context assembly
-- Only `respond_*` nodes write to `history` — classify node never appends
+- Only the `agent` node writes to `history` — classify/memory nodes never append
 
 ### ✅ Phase 2 — Long-Term Memory via Mem0
 
-**Files**: `agent-api/src/memory.py`, `agents/platform/postgresql/`
+**Files**: `agent-api/src/memory.py`, `agent-api/src/agents/base.py` (`make_retrieve_memories`, `make_store_memories`), `agents/platform/postgresql/`
 
 - Mem0 runs **embedded** (in-process library, not a separate server) — `Memory.from_config()`
 - pgvector extension enabled on the `agents` PostgreSQL database; Mem0 creates its own `mem0_memories` table
@@ -85,7 +85,7 @@ classify → retrieve_memories → route_by_complexity
 
 ### ✅ Phase 3 — Cache Layer + Context Engineering
 
-**File**: `agent-api/src/cache.py`
+**Files**: `agent-api/src/cache.py`, `agent-api/src/agents/base.py` (`make_agent_node`, `build_context`)
 
 - Redis async response cache (`redis.asyncio`)
 - Cache key: SHA-256 of `(agent_id, user_id, message.strip(), tier)` — keyed per user
