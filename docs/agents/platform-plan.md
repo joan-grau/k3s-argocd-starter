@@ -1,4 +1,4 @@
-# Agent Platform Plan
+# Agent Platform
 
 GitOps-managed agent platform built on top of the K3s cluster. Workflow-first, approval-gated, external LLMs only.
 
@@ -49,7 +49,7 @@ Sealed Secrets controller deployed. PostgreSQL and Redis provisioned with Longho
 n8n deployed and connected to PostgreSQL. Telegram bot configured as first notification and interaction channel. Webhook URL: `https://n8n.pascualgrau.com/`.
 
 ### ✅ Phase 4 — Agent service boundary (agent-api)
-FastAPI + LangGraph service with multi-tier LLM routing (GPT-4o-mini fast, DeepSeek-V3 complex, DeepSeek-R1 reasoning, Claude Opus expert). Personal assistant agent with full memory stack implemented (see [memory-architecture.md](memory-architecture.md)).
+FastAPI + LangGraph service with multi-tier LLM routing (GPT-4o-mini fast, DeepSeek-V3 complex, DeepSeek-R1 reasoning, Claude Opus expert). Personal assistant agent with full memory stack implemented (see [agent-api/docs/memory.md](https://github.com/joan-grau/agent-api/blob/main/docs/memory.md)).
 
 ### ✅ Phase 5 — Observability and guardrails
 - `agent-api` instrumented with Prometheus: LLM latency (p50/p95 by tier), token counters, cache hit/miss rate, memory op latency
@@ -69,16 +69,16 @@ FastAPI + LangGraph service with multi-tier LLM routing (GPT-4o-mini fast, DeepS
 
 ---
 
-## Agent API — LLM Tier Routing
+## Adding a Domain Agent
 
-| Tier | Model | Use case |
-|------|-------|---------|
-| `fast` | GPT-4o-mini | Trivial, simple factual |
-| `ds-fast` | DeepSeek-Chat | Complex (code, analysis, planning) |
-| `ds-reasoning` | DeepSeek-Reasoner | Chain-of-thought reasoning |
-| `expert` | Claude Opus 4-7 | Nuanced judgment, creative synthesis |
+> Implementation details (Python code, LLM tier table, inherited capabilities) live in the agent-api repo:
+> [`docs/adding-an-agent.md`](https://github.com/joan-grau/agent-api/blob/main/docs/adding-an-agent.md)
 
-Classification happens in the `classify` node before routing. Each tier has its own Redis cache TTL (fast: 1h, ds-fast: 5min, ds-reasoning: 2min, expert: 1min).
+Infra steps:
+1. Create `agents/domain/{agent-name}/` with standard K8s manifests (namespace, deployment, service, httproute, sealedsecret)
+2. Register the agent in `agents/platform/agent-api/configmap.yaml` under `agents:` — set `memory: true` for production agents
+3. Add n8n workflow(s) for triggers (cron, Telegram intent, webhook, approval loops)
+4. Commit — Argo CD auto-discovers and deploys
 
 ---
 
@@ -88,28 +88,6 @@ Classification happens in the `classify` node before routing. Each tier has its 
 |--------------|---------|---------|
 | `telegram-agent-router.json` | Telegram webhook | Routes Telegram messages to agent-api |
 | `memory-lifecycle.json` | Daily + monthly cron | Compact and expire long-term memories |
-
----
-
-## Adding a Domain Agent
-
-1. Create `agents/domain/{agent-name}/` with standard K8s manifests (namespace, deployment, service, httproute, sealedsecret)
-2. Register the agent in `agents/platform/agent-api/configmap.yaml` under `agents:` — set `memory: true` for production agents
-3. Implement the agent in `agent-api/src/agents/{agent_name}.py` using the shared baseline:
-   ```python
-   from src.agents.base import BASE_TOOLS, build_agent_graph
-   # from src.tools.my_tools import tool_a, tool_b  # add domain-specific tools if needed
-
-   SYSTEM_PROMPT = "You are a ..."
-   TOOLS = [*BASE_TOOLS]  # or [tool_a, tool_b, *BASE_TOOLS]
-
-   builder = build_agent_graph(agent_id="my_agent", system_prompt=SYSTEM_PROMPT, tools=TOOLS)
-   graph = builder.compile()
-   ```
-   The agent inherits automatically: LLM 5-tier routing, Mem0 long-term memory, Redis cache, Prometheus metrics, rolling summarization, workspace tools, and schedule tools.
-4. If the agent needs memory lifecycle jobs, add `{user_id, agent_id}` pairs to the `memory-lifecycle.json` n8n workflow
-5. Add n8n workflow(s) for triggers (cron, Telegram intent, webhook, approval loops)
-6. Commit — Argo CD auto-discovers and deploys
 
 ---
 
