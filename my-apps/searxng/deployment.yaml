@@ -17,6 +17,7 @@ spec:
       labels:
         app.kubernetes.io/name: searxng
     spec:
+      enableServiceLinks: false
       containers:
         - name: searxng
           image: searxng/searxng:latest
@@ -30,7 +31,6 @@ spec:
             - name: config
               mountPath: /etc/searxng/settings.yml
               subPath: settings.yml
-              readOnly: true
           resources:
             requests:
               cpu: 50m
