@@ -62,6 +62,12 @@ data:
         graph: finance
         default_tier: fast
         memory: true
+      ecommerce:
+        name: E-commerce Assistant
+        description: Shopify store management — orders, products, inventory, and draft orders
+        graph: ecommerce
+        default_tier: fast
+        memory: true
 
   memory-lifecycle.yaml: |
     # Memory lifecycle thresholds — read by n8n workflows at runtime.
