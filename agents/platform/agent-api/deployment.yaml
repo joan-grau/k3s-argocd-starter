@@ -64,6 +64,23 @@ spec:
               name: agent-api-secrets
               key: n8n-schedule-delivery-secret
               optional: true
+        # -- Email / OAuth (iteration 2) --
+        - name: GRAPH_CLIENT_ID
+          value: "4fd4b157-4b14-4669-a969-d71c33e04b1a"  # Azure AD app registration client ID
+        - name: GRAPH_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: agent-api-secrets
+              key: graph-client-secret
+              optional: true
+        - name: OAUTH_STATE_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: agent-api-secrets
+              key: oauth-state-secret
+              optional: true
+        - name: OAUTH_REDIRECT_URI
+          value: "https://n8n.pascualgrau.com/webhook/outlook-callback"
         - name: HOME
           value: /tmp
         volumeMounts:
