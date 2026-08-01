@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: home-assistant
+  namespace: home-assistant
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: home-assistant
+  template:
+    metadata:
+      labels:
+        app: home-assistant
+    spec:
+      # HomeKit Bridge mDNS advertisement and Xiaomi/Tuya discovery need the LAN broadcast domain
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      initContainers:
+        # HA only generates these on a fresh config dir; the UI editors need them to exist
+        - name: seed-config
+          image: busybox:1.37
+          command:
+            - sh
+            - -c
+            - |
+              cd /config
+              mkdir -p themes custom_components
+              touch automations.yaml scripts.yaml scenes.yaml
+          volumeMounts:
+            - name: config
+              mountPath: /config
+      containers:
+        - name: home-assistant
+          image: ghcr.io/home-assistant/home-assistant:2026.7.4
+          ports:
+            - containerPort: 8123
+              name: http
+            - containerPort: 21063
+              name: homekit
+          env:
+            - name: TZ
+              value: "Europe/Madrid"
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: configuration
+              mountPath: /config/configuration.yaml
+              subPath: configuration.yaml
+              readOnly: true
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "200m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+          startupProbe:
+            httpGet:
+              path: /
+              port: 8123
+            periodSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8123
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8123
+            periodSeconds: 10
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: home-assistant-config
+        - name: configuration
+          configMap:
+            name: home-assistant-configuration

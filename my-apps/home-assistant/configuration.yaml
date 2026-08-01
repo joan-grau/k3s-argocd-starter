@@ -1,0 +1,28 @@
+# Home Assistant base config — GitOps managed, mounted read-only at /config/configuration.yaml.
+# Integration credentials are NOT stored here; they live in /config/.storage on the PVC.
+default_config:
+
+homeassistant:
+  time_zone: Europe/Madrid
+
+http:
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 127.0.0.1
+    - ::1
+    - 192.168.0.25 # k3s node (host-network path)
+    - 192.168.0.35 # Cilium Gateway LoadBalancer
+    - 10.42.0.0/16 # k3s pod CIDR (cloudflared)
+  ip_ban_enabled: true
+  login_attempts_threshold: 5
+
+recorder:
+  auto_purge: true
+  purge_keep_days: 10
+
+frontend:
+  themes: !include_dir_merge_named themes
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
