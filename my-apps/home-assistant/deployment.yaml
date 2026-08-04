@@ -32,9 +32,9 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /config
-        # Pinned HACS checkout, idempotent — safe to re-run on every pod start
+        # Pinned HACS release zip (git clone lacks the built frontend + stamped version), idempotent
         - name: install-hacs
-          image: alpine/git:2.49.0
+          image: alpine:3.21
           env:
             - name: HACS_VERSION
               value: "2.0.5"
@@ -43,10 +43,11 @@ spec:
             - -c
             - |
               set -eu
-              rm -rf /tmp/hacs
-              git clone --depth 1 --branch "${HACS_VERSION}" https://github.com/hacs/integration.git /tmp/hacs
-              rm -rf /config/custom_components/hacs
-              cp -r /tmp/hacs/custom_components/hacs /config/custom_components/hacs
+              apk add --no-cache curl unzip
+              rm -rf /tmp/hacs.zip /config/custom_components/hacs
+              curl -sSL -o /tmp/hacs.zip "https://github.com/hacs/integration/releases/download/${HACS_VERSION}/hacs.zip"
+              mkdir -p /config/custom_components/hacs
+              unzip -q /tmp/hacs.zip -d /config/custom_components/hacs
           volumeMounts:
             - name: config
               mountPath: /config
