@@ -46,7 +46,7 @@ spec:
               rm -rf /tmp/hacs
               git clone --depth 1 --branch "${HACS_VERSION}" https://github.com/hacs/integration.git /tmp/hacs
               rm -rf /config/custom_components/hacs
-              /tmp/hacs/install.sh /config
+              cp -r /tmp/hacs/custom_components/hacs /config/custom_components/hacs
           volumeMounts:
             - name: config
               mountPath: /config

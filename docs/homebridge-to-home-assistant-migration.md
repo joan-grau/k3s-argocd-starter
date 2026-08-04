@@ -151,9 +151,9 @@ Renders cleanly; the Deployment volume correctly references the hashed ConfigMap
 
 ### Phase 1 — Deploy
 
-- [ ] Push the branch and let Argo CD sync.
-- [ ] `kubectl get app home-assistant -n argocd -w`
-- [ ] `kubectl -n home-assistant get pod -w` — first boot takes 1–3 minutes.
+- [x] Push the branch and let Argo CD sync.
+- [x] `kubectl get app home-assistant -n argocd -w`
+- [x] `kubectl -n home-assistant get pod -w` — first boot takes 1–3 minutes.
 - [x] Confirm `homeassistant.lan` resolves to `192.168.0.35` (the `*.lan` AdGuard rewrite should already cover it).
 - [x] Open `https://homeassistant.lan`, complete onboarding, create the owner account.
 - [ ] **Enable MFA immediately.**
