@@ -27,7 +27,7 @@ spec:
             - -c
             - |
               cd /config
-              mkdir -p themes custom_components
+              mkdir -p themes custom_components packages
               touch automations.yaml scripts.yaml scenes.yaml
           volumeMounts:
             - name: config

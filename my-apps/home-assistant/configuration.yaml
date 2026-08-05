@@ -3,7 +3,14 @@
 default_config:
 
 homeassistant:
+  name: Home Assistant
   time_zone: Europe/Madrid
+  unit_system: metric
+  country: ES
+  currency: EUR
+  external_url: https://homeassistant.lan
+  internal_url: http://192.168.0.25:8123
+  packages: !include_dir_named packages
 
 http:
   use_x_forwarded_for: true
@@ -19,6 +26,17 @@ http:
 recorder:
   auto_purge: true
   purge_keep_days: 10
+  commit_interval: 30
+  exclude:
+    domains:
+      - updater
+    entity_globs:
+      - sensor.*_last_seen
+      - sensor.*_linkquality
+      - sensor.*_signal_strength
+
+logger:
+  default: warning
 
 frontend:
   themes: !include_dir_merge_named themes

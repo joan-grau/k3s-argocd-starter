@@ -163,7 +163,7 @@ Renders cleanly; the Deployment volume correctly references the hashed ConfigMap
 Add via *Settings → Devices & Services → Add Integration*. Credentials land in
 `/config/.storage` on the PVC and never touch git.
 
-- [ ] Add the **HACS** integration itself first (GitHub device-code login) — the
+- [x] Add the **HACS** integration itself first (GitHub device-code login) — the
       files are already on the PVC via the `install-hacs` init container, this step
       only registers the config entry.
 - [ ] Xiaomi Home (`xiaomi_miio` domain) — plug @ `192.168.0.30` (IP + token from the config.json backup)
@@ -172,11 +172,11 @@ Add via *Settings → Devices & Services → Add Integration*. Credentials land 
       integration supports `zhimi.heater.mc2a`. If the config flow rejects it, add
       HACS `xiaomi_miot` — HACS is already installed, just add the repo from the
       HACS dashboard.
-- [ ] Tuya — 2 Smart Life switches via the app user-code / QR flow
+- [x] Tuya — 2 Smart Life switches via the app user-code / QR flow
 - [ ] Aqara Hub M2 — add **HomeKit Controller**, pair using the hub's existing
       HomeKit code. Verify all 5 sensors/buttons show up as entities. If pairing is
       refused, see the risk note in Device inventory.
-- [ ] Huawei Solar — add **`huawei_solar`**, point it at the dongle's LAN IP
+- [x] Huawei Solar — add **`huawei_solar`**, point it at the dongle's LAN IP
       (Modbus TCP, default port 6607).
 - [ ] Mitsubishi AC — add **MELCloud**, sign in with the existing account.
 - [ ] Vacuum S20 — try **Xiaomi Home** (`xiaomi_miio`) first; if the config flow
