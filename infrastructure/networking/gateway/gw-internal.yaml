@@ -16,6 +16,13 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
+    - name: ha-oauth
+      protocol: HTTP
+      port: 8123
+      hostname: "homeassistant.local"
+      allowedRoutes:
+        namespaces:
+          from: All
     - name: https
       protocol: HTTPS
       port: 443

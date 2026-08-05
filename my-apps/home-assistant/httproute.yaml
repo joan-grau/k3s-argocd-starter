@@ -8,8 +8,12 @@ spec:
     - name: gateway-internal
       namespace: gateway
       sectionName: https
+    - name: gateway-internal
+      namespace: gateway
+      sectionName: ha-oauth
   hostnames:
     - "homeassistant.lan"
+    - "homeassistant.local"
   rules:
     - matches:
         - path:
