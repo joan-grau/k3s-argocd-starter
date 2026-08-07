@@ -32,12 +32,13 @@ camera.
 | — | Cutover style | Parallel run. Host ports do not collide: Homebridge `8581`/`51333` vs HA `8123`/`21063` |
 | — | Manifest style | Raw manifests + Kustomize, same as `my-apps/homebridge` and `my-apps/adguard-home` |
 | 7 | Aqara Hub M2 path | **HomeKit Controller** — HA pairs to the M2 as a second HomeKit controller, the same protocol Apple Home already uses. No hardware, no sensor re-pairing. Rejected: Zigbee USB coordinator (needs USB passthrough, explicitly ruled out) and Aqara cloud/HACS (unnecessary cloud dependency for 5 sensors) |
-| 8 | Solar inverter integration | **`huawei_solar`** (core, local Modbus TCP) — the dongle is LAN-reachable, no cloud needed |
+| 8 | Solar inverter integration | **`huawei_solar`** (HACS, local Modbus TCP) — the dongle is LAN-reachable, no cloud needed |
 | 9 | Mitsubishi AC integration | **MELCloud** (core, cloud) — Wi-Fi adapter + MELCloud account already exist, zero hardware changes. CN105/ESPHome local mod noted as a possible future upgrade, not required to start |
-| — | Companion services (MQTT / Zigbee2MQTT / ESPHome) | **Not needed** — all three integrations above are core HA, reachable from the existing `hostNetwork` pod. No new Deployments |
+| — | Companion services (MQTT / Zigbee2MQTT / ESPHome) | **Not needed** — all three integrations above run inside HA (core or HACS), reachable from the existing `hostNetwork` pod. No new Deployments |
 | — | USB device passthrough | **Rejected** — no physical device will be passed into any pod |
-| 10 | Vacuum S20 integration path | **Extract local IP + token first** (Xiaomi Cloud Tokens Extractor), then try **Xiaomi Home** (`xiaomi_miio` domain, core) → **Roborock** (core) → HACS `dreame_vacuum`, in that order, whichever the device actually responds to |
+| 10 | Xiaomi devices integration path | **HACS `xiaomi_home`** (`XiaoMi/ha_xiaomi_home`, cloud, Mi account login) — accepted all devices: both plugs, heater `zhimi.heater.mc2a`, and Vacuum S20. Core `xiaomi_miio` fallback chain was not needed |
 | 11 | Mi 360 camera path | **Unofficial RTSP firmware hack** + core **Generic Camera (RTSP)** — risk accepted, isolated as its own Phase 2b since it's a device-level change outside Kubernetes/GitOps entirely |
+| 12 | Solar visualization | **Power Flow Card Plus** (HACS, Frontend/Dashboard category) — animated solar → battery → grid → home flow card. Installed via the HACS UI like any other HACS repo; lives on the PVC only, not git — same reproducibility gap HACS itself had before its `install-hacs` init container |
 
 ---
 
@@ -45,14 +46,14 @@ camera.
 
 | Source | Device | Target in HA | Confidence |
 |---|---|---|---|
-| `homebridge-xiaomi-smart-plug` ×2 | Mi Smart Plug @ `192.168.0.30`, `192.168.0.31` | **Xiaomi Home** (core, `xiaomi_miio` domain, local, reuses existing IP + token) | High |
-| `XiaomiZhimiHeaterMc2` | Smartmi heater `zhimi.heater.mc2a` @ `192.168.0.50` | **Xiaomi Home** (core, `xiaomi_miio` domain); fall back to HACS `xiaomi_miot` if the model is rejected — HACS is now pre-installed | Medium |
+| `homebridge-xiaomi-smart-plug` ×2 | Mi Smart Plug @ `192.168.0.30`, `192.168.0.31` | **HACS `xiaomi_home`** (cloud, Mi account) — working ✓ | High |
+| `XiaomiZhimiHeaterMc2` | Smartmi heater `zhimi.heater.mc2a` @ `192.168.0.50` | **HACS `xiaomi_home`** (cloud, Mi account) — working ✓, model accepted | High |
 | `TuyaWebPlatform` | 2 Smart Life switches | **Tuya** (core, cloud) | High |
 | `TuyaIR` | Tuya IR blaster | **Dropped — not actually in use**, no migration needed | n/a |
 | Direct HomeKit pairing (Apple Home) | Aqara Hub M2 — 5 sensors/buttons | **HomeKit Controller** (core) — HA joins as a second HomeKit controller alongside Apple Home | Medium — see risk below |
-| None (new) | Huawei/FusionSolar inverter + dongle (LAN-reachable) | **`huawei_solar`** (core, local Modbus TCP to the dongle's IP) | High — Modbus TCP already enabled |
+| None (new) | Huawei/FusionSolar inverter + dongle (LAN-reachable) | **`huawei_solar`** (HACS, local Modbus TCP to the dongle's IP) | High — Modbus TCP already enabled |
 | None (new) | Mitsubishi ducted AC (Wi-Fi adapter already MELCloud-paired) | **MELCloud** (core, cloud) | High |
-| None (new) | Xiaomi Robot Vacuum S20 | **Xiaomi Home** (core, `xiaomi_miio` domain) first; fallback **Roborock** (core), then HACS `dreame_vacuum` — HACS is now pre-installed | Low — model/protocol unconfirmed, needs local IP + token first |
+| None (new) | Xiaomi Robot Vacuum S20 | **HACS `xiaomi_home`** (cloud, Mi account) — working ✓, no local token extraction needed | High |
 | None (new) | Mi 360 security camera | Unofficial RTSP firmware hack + **Generic Camera (RTSP)** (core) | Low — no vendor-supported path, firmware-hack risk |
 
 Device IPs and miIO tokens live in the Homebridge `config.json` backup, **not in this repo**.
@@ -166,12 +167,9 @@ Add via *Settings → Devices & Services → Add Integration*. Credentials land 
 - [x] Add the **HACS** integration itself first (GitHub device-code login) — the
       files are already on the PVC via the `install-hacs` init container, this step
       only registers the config entry.
-- [ ] Xiaomi Home (`xiaomi_miio` domain) — plug @ `192.168.0.30` (IP + token from the config.json backup)
-- [ ] Xiaomi Home (`xiaomi_miio` domain) — plug @ `192.168.0.31`
-- [ ] Xiaomi Home (`xiaomi_miio` domain) — heater @ `192.168.0.50`. **Open question**: whether the core
-      integration supports `zhimi.heater.mc2a`. If the config flow rejects it, add
-      HACS `xiaomi_miot` — HACS is already installed, just add the repo from the
-      HACS dashboard.
+- [x] HACS `xiaomi_home` — plug @ `192.168.0.30`
+- [x] HACS `xiaomi_home` — plug @ `192.168.0.31`
+- [x] HACS `xiaomi_home` — heater `zhimi.heater.mc2a` @ `192.168.0.50` — model accepted, working.
 - [x] Tuya — 2 Smart Life switches via the app user-code / QR flow
 - [ ] Aqara Hub M2 — add **HomeKit Controller**, pair using the hub's existing
       HomeKit code. Verify all 5 sensors/buttons show up as entities. If pairing is
@@ -179,9 +177,7 @@ Add via *Settings → Devices & Services → Add Integration*. Credentials land 
 - [x] Huawei Solar — add **`huawei_solar`**, point it at the dongle's LAN IP
       (Modbus TCP, default port 6607).
 - [ ] Mitsubishi AC — add **MELCloud**, sign in with the existing account.
-- [ ] Vacuum S20 — try **Xiaomi Home** (`xiaomi_miio`) first; if the config flow
-      rejects the model, try **Roborock**; if that fails too, add HACS
-      `dreame_vacuum` from the HACS dashboard.
+- [x] Vacuum S20 — **HACS `xiaomi_home`** (same Mi account integration as plugs/heater) — working.
 - [ ] Verify every entity actually toggles from the HA UI **before** touching HomeKit
 
 ### Phase 2b — Mi 360 camera (isolated, higher risk)
@@ -198,6 +194,44 @@ nothing else depends on, this step.
 - [ ] Rollback: if the hack fails or bricks the camera, restore stock firmware /
       factory reset and re-pair to Mi Home — drop it from this migration, nothing
       else in the plan depends on it.
+
+### Phase 2c — Solar visualization (Power Flow Card Plus)
+
+Cosmetic only, no dependency on Phase 3 or anything after it. Requires the
+`huawei_solar` entities from Phase 2 to already be live.
+
+- [x] HACS → Frontend → search **Power Flow Card Plus** → download.
+- [ ] Confirm HACS auto-registered the Lovelace resource (Settings → Dashboards →
+      Resources — enable Advanced Mode on your profile if the tab is hidden).
+- [ ] Look up the real entity IDs (Developer Tools → States, filter `huawei`) —
+      the ones below are the integration's own documented defaults, not read from
+      the live instance, and may differ (multi-device / custom-named setups get
+      suffixed IDs).
+- [ ] Add a card to a dashboard view with the starting config below, then correct
+      entity IDs and flow direction as needed.
+- [ ] Verify grid/battery arrows point the right way; add `invert_state: true` on
+      whichever entity is backwards.
+
+```yaml
+type: custom:power-flow-card-plus
+entities:
+  grid:
+    entity: sensor.power_meter_active_power
+    display_state: one_way
+    color_circle: true
+  solar:
+    entity: sensor.inverter_active_power
+  battery:
+    entity: sensor.battery_charge_discharge_power
+    state_of_charge: sensor.battery_state_of_capacity
+    display_state: one_way
+    color_circle: true
+kilo_threshold: 1000
+```
+
+> **Entity IDs are best-guess defaults**, taken from the `huawei_solar`
+> integration's own README examples — not read from your live instance. Verify
+> and correct them before relying on the card.
 
 ### Phase 3 — HomeKit Bridge
 
@@ -250,14 +284,10 @@ Then push — Argo CD prunes the namespace, Deployment and PVC.
 
 ## Open questions
 
-1. Does the core `xiaomi_miio` integration (branded **Xiaomi Home** in the HA UI)
-   support `zhimi.heater.mc2a`? HACS is installed either way (decision #4), this only
-   determines whether the heater needs the HACS `xiaomi_miot` fallback.
+1. ~~Does the core `xiaomi_miio` integration support `zhimi.heater.mc2a`?~~ **Resolved** — used HACS `xiaomi_home` (cloud) instead; heater accepted and working.
 2. Will the Aqara Hub M2 accept a second simultaneous HomeKit controller pairing
    (HA alongside Apple Home)? See the risk note in Device inventory for the fallback.
-3. Will the S20 respond to a local `xiaomi_miio`/`roborock` handshake, or does it
-   require a cloud-only integration instead? Resolved once the token is extracted
-   and Phase 2 is attempted.
+3. ~~Will the S20 respond to a local `xiaomi_miio`/`roborock` handshake?~~ **Resolved** — HACS `xiaomi_home` (cloud) accepted the S20 directly; no local token extraction needed.
 4. Does the Mi 360's exact hardware/firmware revision have a known, maintained RTSP
    hack? Must be confirmed before starting Phase 2b.
 

@@ -26,6 +26,10 @@ defaultSettings:
   guaranteedInstanceManagerCPU: "5" # Reduce from default 12%
   # Allow scheduling on nodes with existing workloads
   taintToleration: "node-role.kubernetes.io/control-plane:NoSchedule"
+  # Auto-salvage faulted volumes after abrupt shutdown — skips the manual salvage step
+  autoSalvage: true
+  # Wait longer before declaring a node unreachable; prevents false-positive faults during slow reboots
+  nodeDownPodDeletionPolicy: "delete-both-statefulset-and-deployment-pod"
 
 preUpgradeChecker:
   jobEnabled: false
