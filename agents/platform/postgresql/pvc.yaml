@@ -5,6 +5,7 @@ metadata:
   namespace: postgresql
   labels:
     recurring-job-group.longhorn.io/agent-data: enabled
+    recurring-job-group.longhorn.io/offsite-backup: enabled
 spec:
   accessModes:
     - ReadWriteOnce

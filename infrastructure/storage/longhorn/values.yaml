@@ -13,6 +13,11 @@ csi:
   snapshotter:
     replicas: 1
 
+# Off-site backups to Cloudflare R2 (S3-compatible)
+defaultBackupStore:
+  backupTarget: "s3://k3s-longhorn-backups@auto/"
+  backupTargetCredentialSecret: longhorn-r2-backup-secret
+
 defaultSettings:
   defaultDataPath: "/var/lib/longhorn"
   # DATA replica count - this is what matters for your question

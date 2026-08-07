@@ -5,6 +5,8 @@ resources:
   - namespace.yaml
   - httproute.yaml
   - recurring-job-agent-data.yaml
+  - recurring-job-offsite-backup.yaml
+  - sealedsecret.yaml
 helmCharts:
   - name: longhorn
     repo: https://charts.longhorn.io

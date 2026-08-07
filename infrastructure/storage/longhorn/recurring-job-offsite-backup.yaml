@@ -1,0 +1,14 @@
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: offsite-backup-daily
+  namespace: longhorn-system
+spec:
+  # Staggered 1h after the local snapshot job to avoid same-minute overlap on shared volumes
+  cron: "0 2 * * *"
+  task: backup
+  retain: 7
+  concurrency: 2
+  groups:
+    - offsite-backup
+  labels: {}
