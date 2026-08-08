@@ -6,7 +6,7 @@ metadata:
 spec:
   cron: "0 1 * * *"
   task: snapshot
-  retain: 7
+  retain: 3
   concurrency: 2
   groups:
     - agent-data
