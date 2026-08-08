@@ -4,6 +4,7 @@ metadata:
   name: agent-workspace
   namespace: agent-api
   labels:
+    recurring-job.longhorn.io/source: enabled
     recurring-job-group.longhorn.io/offsite-backup: enabled
 spec:
   accessModes:

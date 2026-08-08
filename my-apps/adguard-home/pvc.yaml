@@ -4,6 +4,7 @@ metadata:
   name: adguard-config
   namespace: adguard-home
   labels:
+    recurring-job.longhorn.io/source: enabled
     recurring-job-group.longhorn.io/offsite-backup: enabled
 spec:
   accessModes:
@@ -19,6 +20,7 @@ metadata:
   name: adguard-work
   namespace: adguard-home
   labels:
+    recurring-job.longhorn.io/source: enabled
     recurring-job-group.longhorn.io/offsite-backup: enabled
 spec:
   accessModes:

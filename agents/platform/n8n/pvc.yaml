@@ -4,6 +4,7 @@ metadata:
   name: n8n-data
   namespace: n8n
   labels:
+    recurring-job.longhorn.io/source: enabled
     recurring-job-group.longhorn.io/offsite-backup: enabled
 spec:
   accessModes:

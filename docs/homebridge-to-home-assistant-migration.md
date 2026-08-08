@@ -176,7 +176,7 @@ Add via *Settings → Devices & Services → Add Integration*. Credentials land 
       refused, see the risk note in Device inventory.
 - [x] Huawei Solar — add **`huawei_solar`**, point it at the dongle's LAN IP
       (Modbus TCP, default port 6607).
-- [ ] Mitsubishi AC — add **MELCloud**, sign in with the existing account.
+- [x] Mitsubishi AC — add **MELCloud**, sign in with the existing account.
 - [x] Vacuum S20 — **HACS `xiaomi_home`** (same Mi account integration as plugs/heater) — working.
 - [ ] Verify every entity actually toggles from the HA UI **before** touching HomeKit
 

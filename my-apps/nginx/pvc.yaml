@@ -3,6 +3,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: nginx-storage
   labels:
+    recurring-job.longhorn.io/source: enabled
     recurring-job-group.longhorn.io/offsite-backup: enabled
 spec:
   storageClassName: longhorn

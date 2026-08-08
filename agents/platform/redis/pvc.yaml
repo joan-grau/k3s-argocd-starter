@@ -4,6 +4,7 @@ metadata:
   name: redis-data
   namespace: redis
   labels:
+    recurring-job.longhorn.io/source: enabled
     recurring-job-group.longhorn.io/agent-data: enabled
     recurring-job-group.longhorn.io/offsite-backup: enabled
 spec:

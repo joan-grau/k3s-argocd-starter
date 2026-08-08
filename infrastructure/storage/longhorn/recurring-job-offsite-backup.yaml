@@ -4,8 +4,8 @@ metadata:
   name: offsite-backup-daily
   namespace: longhorn-system
 spec:
-  # Staggered 1h after the local snapshot job to avoid same-minute overlap on shared volumes
-  cron: "0 2 * * *"
+  # TEMP: set to 11:00 for testing the source-label fix; revert to "0 2 * * *" after verifying
+  cron: "0 11 * * *"
   task: backup
   retain: 7
   concurrency: 2
