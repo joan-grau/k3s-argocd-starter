@@ -4,6 +4,9 @@ namespace: agent-api
 resources:
   - namespace.yaml
   - sealedsecret.yaml
+  - secretstore.yaml
+  - secretstore-postgresql.yaml
+  - secretstore-redis.yaml
   - configmap.yaml
   - workspace-pvc.yaml
   - deployment.yaml

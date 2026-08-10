@@ -4,6 +4,8 @@ namespace: n8n
 resources:
   - namespace.yaml
   - sealedsecret.yaml
+  - secretstore.yaml
+  - secretstore-postgresql.yaml
   - pvc.yaml
   - deployment.yaml
   - service.yaml

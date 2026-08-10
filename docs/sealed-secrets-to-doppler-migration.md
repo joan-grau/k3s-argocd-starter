@@ -104,11 +104,14 @@ stored in Doppler** (3 fewer than a naive 1:1 mirror), since `db-password` and
       requests/limits (50m/64Mi, 100m/128Mi) on all three chart-managed
       Deployments — main controller, `webhook`, `certController` — matching the
       resource-constrained style already used in `sealed-secrets/values.yaml`.
-- [ ] Push. No `ApplicationSet` change needed — the existing
+- [x] Push. No `ApplicationSet` change needed — the existing
       [`infrastructure-components-appset.yaml`](../infrastructure/infrastructure-components-appset.yaml)
       git-directory generator picks up `infrastructure/controllers/*` automatically,
-      same as it already does for `sealed-secrets/`.
-- [ ] Verify: `kubectl -n external-secrets get pods`.
+      same as it already does for `sealed-secrets/`. ArgoCD synced clean.
+- [x] Verify: `kubectl -n external-secrets get pods`. All 3 Deployments healthy —
+      `external-secrets` (controller), `external-secrets-webhook`,
+      `external-secrets-cert-controller` — all `1/1 Running`, 0 restarts,
+      `v2.9.0`. **Phase 1 complete.**
 
 ### Phase 2 — Bootstrap tokens + SecretStores (repeat once per app)
 

@@ -4,6 +4,7 @@ namespace: redis
 resources:
   - namespace.yaml
   - sealedsecret.yaml
+  - secretstore.yaml
   - pvc.yaml
   - deployment.yaml
   - service.yaml
