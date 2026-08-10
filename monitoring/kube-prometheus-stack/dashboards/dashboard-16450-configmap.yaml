@@ -353,7 +353,7 @@ data:
               },
               "editorMode": "code",
               "exemplar": true,
-              "expr": "sum without (instance) ((ceph_cluster_total_bytes-ceph_cluster_total_used_bytes)/ceph_cluster_total_bytes)",
+              "expr": "sum(longhorn_node_storage_capacity_bytes - longhorn_node_storage_usage_bytes) / sum(longhorn_node_storage_capacity_bytes)",
               "format": "time_series",
               "interval": "$resolution",
               "intervalFactor": 1,
@@ -364,7 +364,7 @@ data:
               "step": 10
             }
           ],
-          "title": "Ceph Cluster Storage space",
+          "title": "Longhorn Storage space",
           "type": "gauge"
         },
         {
@@ -915,7 +915,7 @@ data:
                 "uid": "${DS_PROMETHEUS}"
               },
               "exemplar": true,
-              "expr": "sum without (instance) (ceph_cluster_total_used_bytes)",
+              "expr": "sum(longhorn_node_storage_usage_bytes)",
               "format": "time_series",
               "interval": "$resolution",
               "legendFormat": "",
@@ -993,7 +993,7 @@ data:
                 "uid": "${DS_PROMETHEUS}"
               },
               "exemplar": true,
-              "expr": "sum without (instance) (ceph_cluster_total_bytes)",
+              "expr": "sum(longhorn_node_storage_capacity_bytes)",
               "format": "time_series",
               "interval": "$resolution",
               "intervalFactor": 1,
