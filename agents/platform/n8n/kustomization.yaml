@@ -3,9 +3,10 @@ kind: Kustomization
 namespace: n8n
 resources:
   - namespace.yaml
-  - sealedsecret.yaml
   - secretstore.yaml
   - secretstore-postgresql.yaml
+  - externalsecret.yaml
+  - externalsecret-postgresql.yaml
   - pvc.yaml
   - deployment.yaml
   - service.yaml

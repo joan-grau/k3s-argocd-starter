@@ -25,7 +25,7 @@ Doppler dashboard. No private key file to back up and keep current.
 | 5 | Fetch style | `dataFrom` with `find.name.regexp: ".*"` for each project's *own* keys (self-maintaining if a key is ever added/removed in Doppler). For the two cross-project shared-password pulls (see #8), an explicit `data:` entry with `remoteRef.key: PASSWORD` is used instead, since only one specific key is cherry-picked and renamed (`PASSWORD` → `db-password`/`redis-password`) |
 | 6 | Bootstrap token distribution | One Doppler **Service Token** per project, manually created as a `kubectl create secret` per namespace — **never committed to git**. The `postgresql` and `redis` tokens are each created in **more than one namespace** (own namespace + every consumer namespace, see #8) — same token value, one extra `kubectl create secret` run per consumer. Lower-stakes than the old sealed-secrets key: if lost, just regenerate a fresh token from the Doppler dashboard, no data loss |
 | 7 | Rollout style | Migrate and verify **one app at a time**, keep sealed-secrets installed as a long-running safety net. **Phase 4 (decommission) is deliberately delayed** — not run right after the 5th app is confirmed working. Doppler/ESO is new tooling for this cluster, so sealed-secrets stays installed for an extended soak period until confidence is high. **Order matters now**: `postgresql` and `redis` first (source of truth for #8), then `agent-api`/`n8n` (depend on those two projects' tokens existing), then `longhorn-system` last. See **Rollback procedure** (after Phase 3) for how to revert a single app mid-migration |
-| 8 | Shared credentials (Postgres/Redis password) | **Deduplicated.** Confirmed live in-cluster that `agent-api`'s `db-password`, `n8n`'s `db-password`, and `postgresql`'s `password` are byte-identical (same for `agent-api`'s `redis-password` vs `redis`'s `password`). `postgresql`/`redis` are now the **sole source of truth**; `agent-api`/`n8n` no longer store their own copy in Doppler — their `ExternalSecret`s pull it cross-project via an extra `SecretStore` + `ExternalSecret` (`creationPolicy: Merge`) instead. Rotate the password once in `postgresql`/`redis`, every consumer picks it up on its next `refreshInterval` — no more manual multi-project sync |
+| 8 | Shared credentials (Postgres/Redis password) | **Deduplicated.** Confirmed live in-cluster that `agent-api`'s `db-password`, `n8n`'s `db-password`, and `postgresql`'s `password` are byte-identical (same for `agent-api`'s `redis-password` vs `redis`'s `password`). `postgresql`/`redis` are now the **sole source of truth**; `agent-api`/`n8n` no longer store their own copy in Doppler — their `ExternalSecret`s pull it cross-project via an extra `SecretStore` + `ExternalSecret` (`creationPolicy: CreateOrMerge`) instead. Rotate the password once in `postgresql`/`redis`, every consumer picks it up on its next `refreshInterval` — no more manual multi-project sync |
 
 ---
 
@@ -191,16 +191,30 @@ proven on the lower-stakes apps).
       kind: SecretStore
     target:
       name: agent-api-secrets
-      creationPolicy: Merge   # agent-api/n8n only: lets the cross-project ExternalSecrets below merge into the same Secret
+      creationPolicy: CreateOrMerge   # agent-api/n8n only: lets the cross-project ExternalSecrets below merge into the same Secret, and self-heals if the Secret is ever deleted (see note below)
     refreshInterval: 1h
     dataFrom:
       - find:
           name:
             regexp: ".*"
   ```
-  (`postgresql`, `redis`, `longhorn-system` don't need `creationPolicy: Merge` —
-  only one `ExternalSecret` ever targets their Secret, so the default `Owner`
-  policy is fine.)
+  (`postgresql`, `redis`, `longhorn-system` don't need `creationPolicy:
+  CreateOrMerge` — only one `ExternalSecret` ever targets their Secret, so the
+  default `Owner` policy is fine.)
+
+  **Why `CreateOrMerge`, not plain `Merge`** (checked against
+  [ESO's ownership/deletion docs](https://external-secrets.io/latest/guides/ownership-deletion-policy/)
+  on 2026-08-10, before implementing this for `agent-api`/`n8n`): `Merge` never
+  sets `.metadata.ownerReferences`, and per ESO's own behavior matrix it "never
+  creates" the Secret if it's missing. At this point in Phase 3,
+  `agent-api-secrets`/`n8n-secrets` are still owned by their `SealedSecret`;
+  removing `sealedsecret.yaml` prunes that CR, and we'd already watched this
+  exact scenario cascade-delete `postgresql-credentials`/`redis-credentials`
+  via Kubernetes garbage collection during their own cutover. With plain
+  `Merge`, that deletion would have been permanent — no `ExternalSecret` would
+  ever recreate it. `CreateOrMerge` keeps the same "coexist, don't fight over
+  keys" behavior but recreates the Secret immediately if it's ever missing,
+  closing that gap.
 - [ ] For `agent-api` and `n8n` only — add one more `ExternalSecret` per
       shared-credential dependency, cherry-picking just the one key:
   ```yaml
@@ -216,7 +230,7 @@ proven on the lower-stakes apps).
       kind: SecretStore
     target:
       name: agent-api-secrets
-      creationPolicy: Merge
+      creationPolicy: CreateOrMerge
     refreshInterval: 1h
     data:
       - secretKey: db-password
@@ -251,22 +265,24 @@ installed, private key still valid):
      expect a brief gap until the reinstated `SealedSecret` CR reconciles and
      the sealed-secrets controller recreates it, during which the app pod may
      restart/error momentarily.
-   - `agent-api`, `n8n` (all their `ExternalSecret`s use `Merge`): pruning them
-     does **not** delete the Secret — it's left with whatever ESO last wrote.
-     The sealed-secrets controller then takes over that same-named Secret once
-     the `SealedSecret` CR is reinstated, so the gap should be smaller or
-     nonexistent.
+   - `agent-api`, `n8n` (all their `ExternalSecret`s use `CreateOrMerge`):
+     pruning them does **not** delete the Secret — it's left with whatever ESO
+     last wrote. The sealed-secrets controller then takes over that
+     same-named Secret once the `SealedSecret` CR is reinstated, so the gap
+     should be smaller or nonexistent.
 3. Verify: `kubectl get secret <name> -n <namespace> -o jsonpath='{.data}' | jq keys`
    shows the original keys again, and the app pod restarts clean.
 4. Optional cleanup: delete the now-unused Doppler bootstrap token Secret(s)
    (`doppler-token`, `doppler-token-postgresql`, `doppler-token-redis`) in that
    namespace — harmless if left, ESO just has nothing left to reconcile against.
 
-**Not yet tested live** — the exact prune/owner-reference interaction between
-ESO and the sealed-secrets controller is inferred from how each operator
-documents its `creationPolicy`/ownership behavior, not verified end-to-end in
-this cluster. Consider rehearsing this once on a low-stakes app (e.g. `n8n`)
-before relying on it as a real safety net.
+**Not yet tested live** — this rollback direction (reinstating `SealedSecret`
+after removing `ExternalSecret`) is inferred from how each operator documents
+its `creationPolicy`/ownership behavior, not verified end-to-end in this
+cluster. Consider rehearsing this once on a low-stakes app (e.g. `n8n`) before
+relying on it as a real safety net. The *forward* cutover direction (this
+Phase 3, `SealedSecret` → `ExternalSecret`) was checked against ESO's docs
+before implementing `agent-api`/`n8n` — see the `CreateOrMerge` note above.
 
 ### Phase 4 — Decommission sealed-secrets (intentionally delayed)
 
