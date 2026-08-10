@@ -6,8 +6,8 @@ resources:
   - httproute.yaml
   - recurring-job-agent-data.yaml
   - recurring-job-offsite-backup.yaml
-  - sealedsecret.yaml
   - secretstore.yaml
+  - externalsecret.yaml
   - servicemonitor.yaml
 helmCharts:
   - name: longhorn
