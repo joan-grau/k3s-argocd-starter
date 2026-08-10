@@ -24,7 +24,7 @@ Doppler dashboard. No private key file to back up and keep current.
 | 4 | Key naming | Doppler secrets are named in its native `UPPER_SNAKE_CASE`. Each app's **own** `SecretStore` (the one whose `ExternalSecret` uses `dataFrom.find` to fetch everything) sets `nameTransformer: lower-kebab` so the resulting k8s `Secret` keeps today's exact `lower-kebab` keys — **zero Deployment changes**. Exceptions: the `longhorn` store has no transformer (keys already uppercase `AWS_ACCESS_KEY_ID` etc., must stay that way), and the cross-project shared-credential stores (`doppler-postgresql`, `doppler-redis`, see #8) also have no transformer — they cherry-pick one explicit key instead |
 | 5 | Fetch style | `dataFrom` with `find.name.regexp: ".*"` for each project's *own* keys (self-maintaining if a key is ever added/removed in Doppler). For the two cross-project shared-password pulls (see #8), an explicit `data:` entry with `remoteRef.key: PASSWORD` is used instead, since only one specific key is cherry-picked and renamed (`PASSWORD` → `db-password`/`redis-password`) |
 | 6 | Bootstrap token distribution | One Doppler **Service Token** per project, manually created as a `kubectl create secret` per namespace — **never committed to git**. The `postgresql` and `redis` tokens are each created in **more than one namespace** (own namespace + every consumer namespace, see #8) — same token value, one extra `kubectl create secret` run per consumer. Lower-stakes than the old sealed-secrets key: if lost, just regenerate a fresh token from the Doppler dashboard, no data loss |
-| 7 | Rollout style | Migrate and verify **one app at a time**, keep sealed-secrets installed as a safety net until all 5 are confirmed working, decommission it last. **Order matters now**: `postgresql` and `redis` first (source of truth for #8), then `agent-api`/`n8n` (depend on those two projects' tokens existing), then `longhorn-system` last |
+| 7 | Rollout style | Migrate and verify **one app at a time**, keep sealed-secrets installed as a long-running safety net. **Phase 4 (decommission) is deliberately delayed** — not run right after the 5th app is confirmed working. Doppler/ESO is new tooling for this cluster, so sealed-secrets stays installed for an extended soak period until confidence is high. **Order matters now**: `postgresql` and `redis` first (source of truth for #8), then `agent-api`/`n8n` (depend on those two projects' tokens existing), then `longhorn-system` last. See **Rollback procedure** (after Phase 3) for how to revert a single app mid-migration |
 | 8 | Shared credentials (Postgres/Redis password) | **Deduplicated.** Confirmed live in-cluster that `agent-api`'s `db-password`, `n8n`'s `db-password`, and `postgresql`'s `password` are byte-identical (same for `agent-api`'s `redis-password` vs `redis`'s `password`). `postgresql`/`redis` are now the **sole source of truth**; `agent-api`/`n8n` no longer store their own copy in Doppler — their `ExternalSecret`s pull it cross-project via an extra `SecretStore` + `ExternalSecret` (`creationPolicy: Merge`) instead. Rotate the password once in `postgresql`/`redis`, every consumer picks it up on its next `refreshInterval` — no more manual multi-project sync |
 
 ---
@@ -60,11 +60,11 @@ stored in Doppler** (3 fewer than a naive 1:1 mirror), since `db-password` and
 
 ### Phase 0 — Prep
 
-- [ ] Create a free Doppler account.
-- [ ] Create 5 Doppler projects: `agent-api`, `n8n`, `postgresql`, `redis`,
+- [x] Create a free Doppler account.
+- [x] Create 5 Doppler projects: `agent-api`, `n8n`, `postgresql`, `redis`,
       `longhorn-backup`. Use the default `prd` config in each; ignore or delete
       `dev`/`stg`.
-- [ ] Populate each project's secrets in `UPPER_SNAKE_CASE` (Doppler's native
+- [x] Populate each project's secrets in `UPPER_SNAKE_CASE` (Doppler's native
       convention — the `lower-kebab` name transformer converts them back on the way
       into the cluster). **`DB_PASSWORD`/`REDIS_PASSWORD` are deliberately absent
       from `agent-api`/`n8n` below** — per Decision #8 they're cross-project pulls
@@ -77,7 +77,7 @@ stored in Doppler** (3 fewer than a naive 1:1 mirror), since `db-password` and
   - **redis**: `PASSWORD` — source of truth, also consumed by `agent-api`
   - **longhorn-backup**: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ENDPOINTS`
         (already correctly cased, no transform needed)
-- [ ] Pull each real value out of the live cluster to paste into Doppler — decodes
+- [x] Pull each real value out of the live cluster to paste into Doppler — decodes
       every key in one shot:
   ```bash
   kubectl get secret agent-api-secrets -n agent-api -o json | jq -r '.data | map_values(@base64d)'
@@ -94,12 +94,16 @@ stored in Doppler** (3 fewer than a naive 1:1 mirror), since `db-password` and
 
 ### Phase 1 — Install External Secrets Operator
 
-- [ ] Create `infrastructure/controllers/external-secrets/` mirroring the
+- [x] Create `infrastructure/controllers/external-secrets/` mirroring the
       `sealed-secrets/` directory exactly: `namespace.yaml`, `values.yaml`, and a
       `kustomization.yaml` using the `helmCharts` inflator —
       chart `external-secrets` from `https://charts.external-secrets.io`
       (check [the release list](https://github.com/external-secrets/external-secrets/releases)
-      for the current version before pinning it).
+      for the current version before pinning it). Pinned `2.9.0` (latest chart
+      release as of 2026-08-10). `values.yaml` sets small resource
+      requests/limits (50m/64Mi, 100m/128Mi) on all three chart-managed
+      Deployments — main controller, `webhook`, `certController` — matching the
+      resource-constrained style already used in `sealed-secrets/values.yaml`.
 - [ ] Push. No `ApplicationSet` change needed — the existing
       [`infrastructure-components-appset.yaml`](../infrastructure/infrastructure-components-appset.yaml)
       git-directory generator picks up `infrastructure/controllers/*` automatically,
@@ -226,11 +230,52 @@ proven on the lower-stakes apps).
       before: `kubectl get secret agent-api-secrets -n agent-api -o jsonpath='{.data}' | jq keys`,
       and spot-check `db-password`/`redis-password` still decode to the same value
       as `postgresql-credentials`/`redis-credentials`.
-- [ ] Verify the app pod restarts clean and actually works before moving to the next app.
+- [ ] Verify the app pod restarts clean and actually works before moving to the next app. If something breaks, see **Rollback procedure** below before touching the next app.
 
-### Phase 4 — Decommission sealed-secrets
+### Rollback procedure (per app, only works before Phase 4 runs)
 
-- [ ] Once all 5 apps are migrated and verified, delete
+If an app's Phase 3 cutover causes problems, revert just that app back to its
+`SealedSecret` — safe as long as Phase 4 hasn't run yet (controller still
+installed, private key still valid):
+
+1. `git revert` (or manually undo) that app's Phase 3 commit: restores
+   `sealedsecret.yaml` to the `kustomization.yaml` `resources:` list and removes
+   `secretstore.yaml` / `externalsecret.yaml` (+ the extra `secretstore-*.yaml` /
+   `externalsecret-*.yaml` pairs for `agent-api`/`n8n`).
+2. Push and let ArgoCD sync. What happens next differs by `creationPolicy`:
+   - `postgresql`, `redis`, `longhorn-system` (own `ExternalSecret` uses the
+     default `Owner` policy): pruning it **deletes** the Secret it owned —
+     expect a brief gap until the reinstated `SealedSecret` CR reconciles and
+     the sealed-secrets controller recreates it, during which the app pod may
+     restart/error momentarily.
+   - `agent-api`, `n8n` (all their `ExternalSecret`s use `Merge`): pruning them
+     does **not** delete the Secret — it's left with whatever ESO last wrote.
+     The sealed-secrets controller then takes over that same-named Secret once
+     the `SealedSecret` CR is reinstated, so the gap should be smaller or
+     nonexistent.
+3. Verify: `kubectl get secret <name> -n <namespace> -o jsonpath='{.data}' | jq keys`
+   shows the original keys again, and the app pod restarts clean.
+4. Optional cleanup: delete the now-unused Doppler bootstrap token Secret(s)
+   (`doppler-token`, `doppler-token-postgresql`, `doppler-token-redis`) in that
+   namespace — harmless if left, ESO just has nothing left to reconcile against.
+
+**Not yet tested live** — the exact prune/owner-reference interaction between
+ESO and the sealed-secrets controller is inferred from how each operator
+documents its `creationPolicy`/ownership behavior, not verified end-to-end in
+this cluster. Consider rehearsing this once on a low-stakes app (e.g. `n8n`)
+before relying on it as a real safety net.
+
+### Phase 4 — Decommission sealed-secrets (intentionally delayed)
+
+> **Do not rush this.** Per Decision #7, sealed-secrets stays installed as a
+> fallback for an extended soak period after all 5 apps are confirmed working —
+> there's no fixed calendar trigger, just "confidence is high that Doppler/ESO
+> is reliable in practice, across real rotations/restarts/node reboots." Once
+> this phase runs, the **Rollback procedure** above stops working for good (the
+> sealed-secrets private key is gone) — treat it as a one-way door.
+
+- [ ] Once all 5 apps are migrated, verified, and have run stably on
+      Doppler/ESO for an extended period, delete
       `infrastructure/controllers/sealed-secrets/` from git.
 - [ ] Optionally delete the sealed-secrets key Secrets from the cluster
       (`kubectl -n sealed-secrets delete secret -l sealedsecrets.bitnami.com/sealed-secrets-key`).
