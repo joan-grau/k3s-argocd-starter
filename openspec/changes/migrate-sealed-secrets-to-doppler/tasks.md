@@ -28,7 +28,7 @@
   kubectl get secret redis-credentials -n redis -o json | jq -r '.data | map_values(@base64d)'
   kubectl get secret longhorn-r2-backup-secret -n longhorn-system -o json | jq -r '.data | map_values(@base64d)'
   ```
-- [ ] 1.5 Generate one Service Token per project (Doppler dashboard → project
+- [x] 1.5 Generate one Service Token per project (Doppler dashboard → project
       → config → Access tab) — 5 tokens for 5 projects. Copy each value
       somewhere temporary. The `postgresql` and `redis` tokens get entered
       into the cluster more than once in Phase 2 (once per consumer
@@ -60,15 +60,15 @@
 Order matters: do `postgresql` and `redis` first — `agent-api`/`n8n`'s extra
 SecretStores need those two projects' tokens to already exist.
 
-- [ ] 3.1 Create the bootstrap token Secret manually — not committed to git:
+- [x] 3.1 Create the bootstrap token Secret manually — not committed to git:
   ```bash
   HISTIGNORE='*kubectl*' kubectl create secret generic doppler-token \
     -n <namespace> --from-literal=dopplerToken="dp.st.xxxx"
   ```
-- [ ] 3.2 Commit a `secretstore.yaml` per namespace (safe to commit — it only
+- [x] 3.2 Commit a `secretstore.yaml` per namespace (safe to commit — it only
       references the bootstrap Secret by name, never the token value itself).
       See design.md for the exact shape.
-- [ ] 3.3 For `agent-api` and `n8n` only — repeat both steps above once per
+- [x] 3.3 For `agent-api` and `n8n` only — repeat both steps above once per
       shared-credential dependency, reusing the `postgresql`/`redis`
       project's own token value (copied, not regenerated) under a distinct
       Secret name + `SecretStore` name so it doesn't collide with the app's
@@ -89,14 +89,14 @@ pattern is proven on the lower-stakes apps).
 - [x] 4.2 Update that app's `kustomization.yaml`: remove `sealedsecret.yaml`,
       add `secretstore.yaml` + `externalsecret.yaml` (+ the extra
       `secretstore-*.yaml` pairs for `agent-api`/`n8n`).
-- [ ] 4.3 Push, then verify the generated Secret has the same keys and values
+- [x] 4.3 Push, then verify the generated Secret has the same keys and values
       as before:
   ```bash
   kubectl get secret agent-api-secrets -n agent-api -o jsonpath='{.data}' | jq keys
   ```
       and spot-check `db-password`/`redis-password` still decode to the same
       value as `postgresql-credentials`/`redis-credentials`.
-- [ ] 4.4 Verify the app pod restarts clean and actually works before moving
+- [x] 4.4 Verify the app pod restarts clean and actually works before moving
       to the next app. If something breaks, see the Rollback procedure in
       design.md before touching the next app.
 

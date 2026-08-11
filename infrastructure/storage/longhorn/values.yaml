@@ -1,17 +1,12 @@
 # Optimized for 1-2 node cluster
-longhorn:
-  # CSI controller replicas - keep at 1 for small clusters
-  replicas: 1
-
 csi:
-  attacher:
-    replicas: 1
-  provisioner:
-    replicas: 1
-  resizer:
-    replicas: 1
-  snapshotter:
-    replicas: 1
+  attacherReplicaCount: 1
+  provisionerReplicaCount: 1
+  resizerReplicaCount: 1
+  snapshotterReplicaCount: 1
+
+longhornUI:
+  replicas: 1
 
 # Off-site backups to Cloudflare R2 (S3-compatible)
 defaultBackupStore:

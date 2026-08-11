@@ -86,7 +86,7 @@ prometheus:
   prometheusSpec:
     nodeSelector:
       kubernetes.io/arch: amd64
-    retention: 7d
+    retention: 3d
     # Fix scraping timeouts and intervals to prevent broken pipe errors
     scrapeInterval: 30s
     scrapeTimeout: 10s
