@@ -141,6 +141,31 @@ kubectl kustomize my-apps/home-assistant
 Renders cleanly; the Deployment volume correctly references the hashed
 ConfigMap name.
 
+## Implementation notes (Phase 5)
+
+Verified `https://homeassistant.pascualgrau.com` end-to-end from the public
+internet. Two infra issues surfaced during verification — neither is a Home
+Assistant config problem, both are pre-existing cluster/node gaps:
+
+- **Stale cloudflared pod.** The `cloudflared` ConfigMap (in
+  `infrastructure/networking/cloudflared`) is mounted via `subPath`, which
+  never hot-reloads — unlike this app's own `configuration.yaml` ConfigMap,
+  cloudflared's has no hash-suffix generator to force a rollout. Argo CD had
+  synced the new ingress rule into the ConfigMap object fine, but the
+  long-running pod kept serving the old rule set and fell through to
+  cloudflared's catch-all 404. Fixed with a one-off manual restart
+  (`kubectl rollout restart daemonset/cloudflared -n cloudflared`) — this
+  will recur for any future cloudflared ingress edit.
+- **Missing host firewall rule.** The k3s node runs `ufw` (default-deny
+  inbound), managed entirely outside GitOps. Any `hostNetwork: true` pod —
+  this one and Homebridge — is reachable from the pod network only if its
+  port has an explicit `ufw allow` rule. Port 8123 had none (Homebridge's
+  8581 did), which surfaced as a TCP-level `dial tcp <ClusterIP>:80: i/o
+  timeout` from cloudflared, not a Service/EndpointSlice/Kubernetes problem.
+  Fixed with `sudo ufw allow 8123` on the node. Any future `hostNetwork: true`
+  app on this cluster needs the same manual step — nothing in Argo
+  CD/Kustomize can express it.
+
 ## Rollback
 
 Nothing is destructive until the Homebridge decommission phase. Up to that

@@ -145,3 +145,10 @@ Cosmetic only, no dependency on Phase 3 or anything after it. Requires the
 
   Exposed with password + MFA only, no Cloudflare Access — see the 8.1
   decision note above.
+
+- [x] 8.5 Verified `https://homeassistant.pascualgrau.com` end-to-end from the
+      public internet. Two pre-existing infra gaps surfaced and were fixed
+      along the way (not Home Assistant config issues) — see design.md
+      "Implementation notes (Phase 5)": cloudflared's `subPath`-mounted
+      ConfigMap needed a manual pod restart to pick up the new ingress rule,
+      and the node's `ufw` firewall had no allow rule for port 8123.
