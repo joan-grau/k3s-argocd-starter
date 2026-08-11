@@ -11,6 +11,8 @@ ingress:
     service: http://prometheus-grafana.kube-prometheus-stack.svc.cluster.local:80
   - hostname: headlamp.pascualgrau.com
     service: http://headlamp.kube-system.svc.cluster.local:80
+  - hostname: homeassistant.pascualgrau.com
+    service: http://home-assistant.home-assistant.svc.cluster.local:80
   - hostname: homebridge.pascualgrau.com
     service: http://homebridge.homebridge.svc.cluster.local:80
   - hostname: n8n.pascualgrau.com

@@ -1,16 +1,16 @@
 ## 1. Phase 0 — Prep (do before pushing)
 
-- [ ] 1.1 Rotate the Tuya / Smart Life account password and the Tuya IoT API
+- [x] 1.1 Rotate the Tuya / Smart Life account password and the Tuya IoT API
       secret. They were exposed in plaintext while planning this migration.
 - [ ] 1.2 Longhorn snapshot of the `homebridge-config` volume.
 - [ ] 1.3 Copy the Homebridge `config.json` off the volume to a safe location
       outside the repo.
-- [ ] 1.4 Screenshot every room, scene and automation in the Apple Home app —
+- [x] 1.4 Screenshot every room, scene and automation in the Apple Home app —
       re-pairing loses all of it and there is no export.
 - [x] 1.5 Huawei dongle Modbus TCP already enabled.
 - [x] 1.6 Note the dongle's LAN IP for Phase 2. Progress: dongle LAN IP
       identified (`192.168.0.134`).
-- [ ] 1.7 Confirm the existing MELCloud app login still works — used directly
+- [x] 1.7 Confirm the existing MELCloud app login still works — used directly
       in HA's MELCloud integration, never stored in this repo.
 - [x] 1.8 Extract the Xiaomi Robot Vacuum S20's local IP + miIO token (Xiaomi
       Cloud Tokens Extractor). Progress: local IP identified (`192.168.0.23`);
@@ -27,7 +27,7 @@
       AdGuard rewrite should already cover it).
 - [x] 2.5 Open `https://homeassistant.lan`, complete onboarding, create the
       owner account.
-- [ ] 2.6 Enable MFA immediately.
+- [x] 2.6 Enable MFA immediately.
 
 ## 3. Phase 2 — Integrations
 
@@ -133,12 +133,15 @@ Cosmetic only, no dependency on Phase 3 or anything after it. Requires the
 
 ## 8. Phase 5 — Public access + hardening
 
-- [ ] 8.1 Create the Cloudflare Access policy for
-      `homeassistant.pascualgrau.com` **first**.
-- [ ] 8.2 Only then add the tunnel ingress entry:
+- [x] 8.1 ~~Create the Cloudflare Access policy for
+      `homeassistant.pascualgrau.com` first.~~ **Decision 2026-08-11**:
+      skipped — Access breaks the HA Companion App (browser-login redirect it
+      can't complete). See design.md Decision #5 and Risks / Trade-offs.
+- [x] 8.2 Add the tunnel ingress entry:
       `http://home-assistant.home-assistant.svc.cluster.local:80`.
-- [ ] 8.3 Confirm `trusted_proxies` covers the cloudflared pod IPs.
-- [ ] 8.4 Re-check MFA and `ip_ban_enabled`.
+- [x] 8.3 Confirm `trusted_proxies` covers the cloudflared pod IPs — already
+      did, `10.42.0.0/16` (k3s pod CIDR) is in configuration.yaml.
+- [x] 8.4 Re-check MFA and `ip_ban_enabled` — both already on.
 
-  Adding the tunnel hostname before the Access policy exists would publish the
-  HA login page to the internet. Order matters.
+  Exposed with password + MFA only, no Cloudflare Access — see the 8.1
+  decision note above.

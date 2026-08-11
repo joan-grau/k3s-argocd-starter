@@ -34,7 +34,7 @@ Home Assistant's replacement integrations are verified working.
 | 2 | `configuration.yaml` ownership | GitOps — ConfigMap mounted read-only via `subPath`, generated with a hash suffix so edits roll the pod |
 | 3 | Recorder database | SQLite on the PVC. **Do not** reuse the `agents/platform` PostgreSQL |
 | 4 | HACS / custom components | **Installed** — pinned via a GitOps init container (`install-hacs`, HACS `2.0.5`) cloning into `/config/custom_components/hacs` on every pod start. No longer gated on the heater/vacuum fallback; available immediately for any device that needs it |
-| 5 | Public access | Cloudflare Tunnel **behind a Cloudflare Access policy**, not raw |
+| 5 | Public access | Cloudflare Tunnel, password + MFA only — **no Cloudflare Access** (breaks the HA Companion App's native API/WebSocket calls, which can't complete Access's browser-based login redirect). Hardening: `ip_ban_enabled: true`, `login_attempts_threshold: 5`, MFA |
 | 6 | Homebridge teardown | Delete after cutover, keep a documented record (this change) + a Longhorn snapshot |
 | — | Cutover style | Parallel run. Host ports do not collide: Homebridge `8581`/`51333` vs HA `8123`/`21063` |
 | — | Manifest style | Raw manifests + Kustomize, same as `my-apps/homebridge` and `my-apps/adguard-home` |
@@ -81,6 +81,13 @@ here — like every other integration, they live in HA's `.storage` on the PVC.
 > from any other integration in this plan, so worst case is simply losing the
 > camera, not blocking the rest of the migration. Confirm the RTSP stream plays
 > externally (VLC/ffprobe) before adding it to HA.
+
+> **No Cloudflare Access in front of the public tunnel**: dropped because
+> Access redirects to a browser-based login the HA Companion App can't
+> complete, breaking remote app access entirely. The perimeter is HA's own
+> auth only (password + MFA + `ip_ban_enabled` + `login_attempts_threshold`),
+> weaker than Access + MFA would have been. Revisit if Cloudflare WARP
+> (split-tunnel) or a VPN-based remote-access path is adopted later.
 
 ## Implementation notes (Phase 1)
 
