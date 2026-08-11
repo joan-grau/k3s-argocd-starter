@@ -6,7 +6,6 @@ resources:
   - secretstore.yaml
   - secretstore-postgresql.yaml
   - externalsecret.yaml
-  - externalsecret-postgresql.yaml
   - pvc.yaml
   - deployment.yaml
   - service.yaml

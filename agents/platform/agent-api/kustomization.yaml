@@ -7,8 +7,6 @@ resources:
   - secretstore-postgresql.yaml
   - secretstore-redis.yaml
   - externalsecret.yaml
-  - externalsecret-postgresql.yaml
-  - externalsecret-redis.yaml
   - configmap.yaml
   - workspace-pvc.yaml
   - deployment.yaml
