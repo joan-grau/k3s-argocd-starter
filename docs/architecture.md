@@ -66,12 +66,16 @@ k3s-argocd-starter/
 │   ├── it-tools/            ← Developer tools collection
 │   ├── nginx/               ← Static site
 │   └── rsshub/              ← RSS feed aggregator (multi-container: app + redis + browserless)
+├── openspec/                ← Spec-driven change tracking (OpenSpec CLI)
+│   ├── specs/                  ← Source-of-truth specs (starts empty; grows as changes archive)
+│   └── changes/                ← In-flight changes (proposal/design/tasks + delta specs)
 └── docs/                    ← Supplemental documentation
     ├── architecture.md      ← This file
-    ├── adguard-home-setup.md
-    └── agents/
-        ├── platform-plan.md
-        └── memory-architecture.md
+    ├── agent-platform.md    ← Agent platform architecture + rollout
+    ├── agent-platform-memory.md ← Agent memory architecture (pointer + reference)
+    └── runbooks/
+        ├── adguard-home-setup.md
+        └── telegram-onboarding.md
 ```
 
 ---

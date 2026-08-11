@@ -26,6 +26,10 @@ GitOps-managed agent platform built on top of the K3s cluster. Workflow-first, a
 | Cache | Redis 7 | `agents/platform/redis/` | Response cache, session locks |
 | Secrets | Bitnami Sealed Secrets | `infrastructure/controllers/sealed-secrets/` | Encrypted secrets in git |
 
+> Secret management is migrating to External Secrets Operator + Doppler — see
+> [`openspec/changes/migrate-sealed-secrets-to-doppler/`](../openspec/changes/migrate-sealed-secrets-to-doppler/proposal.md)
+> for the in-progress change.
+
 ### Services
 
 | Service | URL | Access |
@@ -44,9 +48,19 @@ GitOps-managed agent platform built on top of the K3s cluster. Workflow-first, a
 | 1 — Governance | Argo CD `agents` project + ApplicationSets scanning `agents/platform/*` and `agents/domain/*`. Isolated from `my-apps`. |
 | 2 — State foundations | Sealed Secrets, PostgreSQL 16 + pgvector, Redis 7 — all on Longhorn PVCs. |
 | 3 — Orchestration | n8n connected to PostgreSQL; Telegram bot as notification and interaction channel. |
-| 4 — Agent runtime | FastAPI + LangGraph service, 5-tier LLM routing, personal assistant with full Mem0 memory stack. See [agent-api/docs/memory.md](https://github.com/joan-grau/agent-api/blob/main/docs/memory.md). |
+| 4 — Agent runtime | FastAPI + LangGraph service, 5-tier LLM routing, personal assistant with full Mem0 memory stack. See [agent-api/docs/memory.md](https://github.com/joan-grau/agent-api/blob/main/docs/memory.md) and [agent-platform-memory.md](./agent-platform-memory.md). |
 | 5 — Observability | Prometheus metrics (latency, tokens, cache, memory ops), Grafana dashboard, ResourceQuotas, Longhorn daily snapshots. |
-| 6 — Finance Advisor | `src/agents/finance.py` — yfinance tools (`get_quote`, `get_technical_indicators`, `get_daily_summary`), watchlist in agent workspace, daily Telegram summary at 08:00 CET, interactive via Telegram router. Read-only. |
+| 6 — Finance Advisor | See detail below. Read-only. |
+
+### Phase 6 detail — Finance Advisor
+
+- **Data**: yfinance (free, no API key) — stocks, ETFs, crypto, multi-exchange
+- **Watchlist**: `watchlist.json` in the agent's private workspace — managed by the agent via workspace file tools
+- **Tools**: `get_quote`, `get_technical_indicators` (RSI/MA20/MA50), `get_daily_summary` (batch from workspace watchlist)
+- **Agent**: `src/agents/finance.py` — ReAct (ToolNode) graph, keyword-based tier routing (fast / ds-fast / ds-reasoning)
+- **Daily summary**: n8n cron 08:00 CET weekdays → `POST /agents/finance/invoke` → Telegram
+- **Interactive**: Telegram router updated with finance intent detection → routes finance queries to `/agents/finance/invoke`
+- **Scope**: Fully read-only. No broker integration. Portfolio tracking deferred to Phase 6b.
 
 ---
 
@@ -60,6 +74,14 @@ Infra steps:
 2. Add n8n workflow(s) for triggers (cron, Telegram intent, webhook, approval loops)
 3. Commit — Argo CD picks up the ConfigMap change and agent-api reloads
 
+> **Note**: an earlier draft of this doc also listed a first step to create
+> `agents/domain/{agent-name}/` with standalone K8s manifests (namespace,
+> deployment, service, httproute, sealedsecret) for each domain agent. In
+> practice, Finance Advisor — the only domain agent added so far — was
+> implemented as in-process code inside `agent-api` rather than its own K8s
+> service, and `agents/domain/` remains empty (only `.gitkeep`) in this repo.
+> Revisit this note if a future agent does need its own standalone deployment.
+
 ---
 
 ## n8n Workflow Inventory
@@ -68,6 +90,8 @@ Infra steps:
 |--------------|---------|---------|
 | `telegram-agent-router.json` | Telegram webhook | Routes Telegram messages to agent-api |
 | `memory-lifecycle.json` | Daily + monthly cron | Compact and expire long-term memories |
+
+Telegram bot/user onboarding: see [runbooks/telegram-onboarding.md](./runbooks/telegram-onboarding.md).
 
 ---
 
