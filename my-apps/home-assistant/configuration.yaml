@@ -8,7 +8,7 @@ homeassistant:
   unit_system: metric
   country: ES
   currency: EUR
-  external_url: https://homeassistant.lan
+  external_url: https://homeassistant.pascualgrau.com
   internal_url: http://192.168.0.25:8123
   packages: !include_dir_named packages
 
