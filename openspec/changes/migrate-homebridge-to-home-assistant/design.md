@@ -38,7 +38,7 @@ Home Assistant's replacement integrations are verified working.
 | 6 | Homebridge teardown | Delete after cutover, keep a documented record (this change) + a Longhorn snapshot |
 | — | Cutover style | Parallel run. Host ports do not collide: Homebridge `8581`/`51333` vs HA `8123`/`21063` |
 | — | Manifest style | Raw manifests + Kustomize, same as `my-apps/homebridge` and `my-apps/adguard-home` |
-| 7 | Aqara Hub M2 path | **HomeKit Controller** — HA pairs to the M2 as a second HomeKit controller, the same protocol Apple Home already uses. No hardware, no sensor re-pairing. Rejected: Zigbee USB coordinator (needs USB passthrough, explicitly ruled out) and Aqara cloud/HACS (unnecessary cloud dependency for 5 sensors) |
+| 7 | Aqara Hub M2 path | **HomeKit Controller** (core) — HomeKit accessories only support one paired controller at a time, so the M2 is unpaired from Apple Home first, then paired to HA; HA's own HomeKit Bridge (Phase 3) re-exposes the 5 entities back to Apple Home/Siri afterwards. No hardware changes, no Zigbee re-pairing. Rejected: Zigbee USB coordinator (needs USB passthrough, explicitly ruled out) and the community `AqaraGateway` HACS integration (local, not cloud, but requires enabling telnet and — on current M2 firmware — opening the case to flash modified firmware via UART; same risk class as the Mi 360 camera hack) |
 | 8 | Solar inverter integration | **`huawei_solar`** (HACS, local Modbus TCP) — the dongle is LAN-reachable, no cloud needed |
 | 9 | Mitsubishi AC integration | **MELCloud** (core, cloud) — Wi-Fi adapter + MELCloud account already exist, zero hardware changes. CN105/ESPHome local mod noted as a possible future upgrade, not required to start |
 | — | Companion services (MQTT / Zigbee2MQTT / ESPHome) | **Not needed** — all three integrations above run inside HA (core or HACS), reachable from the existing `hostNetwork` pod. No new Deployments |
@@ -55,7 +55,7 @@ Home Assistant's replacement integrations are verified working.
 | `XiaomiZhimiHeaterMc2` | Smartmi heater `zhimi.heater.mc2a` @ `192.168.0.50` | **HACS `xiaomi_home`** (cloud, Mi account) — working ✓, model accepted | High |
 | `TuyaWebPlatform` | 2 Smart Life switches | **Tuya** (core, cloud) | High |
 | `TuyaIR` | Tuya IR blaster | **Dropped — not actually in use**, no migration needed | n/a |
-| Direct HomeKit pairing (Apple Home) | Aqara Hub M2 — 5 sensors/buttons | **HomeKit Controller** (core) — HA joins as a second HomeKit controller alongside Apple Home | Medium — see risk below |
+| Direct HomeKit pairing (Apple Home) | Aqara Hub M2 — 5 sensors/buttons | **HomeKit Controller** (core) — unpaired from Apple Home, paired to HA, re-exposed to Apple Home via HA's own HomeKit Bridge (Phase 3) | Medium — see risk below |
 | None (new) | Huawei/FusionSolar inverter + dongle (LAN-reachable) | **`huawei_solar`** (HACS, local Modbus TCP to the dongle's IP) | High — Modbus TCP already enabled |
 | None (new) | Mitsubishi ducted AC (Wi-Fi adapter already MELCloud-paired) | **MELCloud** (core, cloud) | High |
 | None (new) | Xiaomi Robot Vacuum S20 | **HACS `xiaomi_home`** (cloud, Mi account) — working ✓, no local token extraction needed | High |
@@ -67,13 +67,16 @@ here — like every other integration, they live in HA's `.storage` on the PVC.
 
 ## Risks / Trade-offs
 
-> **Aqara multi-controller pairing**: HomeKit's spec allows an accessory to have
-> multiple paired controllers, so HA and Apple Home pairing to the M2
-> simultaneously *should* work. If the hub refuses the second pairing, the
-> fallback is to unpair it from Apple Home, pair it to HA only, then re-expose
-> those 5 entities to Apple Home through HA's own HomeKit Bridge — the same path
-> already planned for the Xiaomi/Tuya devices. Test this before assuming either
-> way.
+> **Aqara HomeKit re-pairing**: HomeKit accessories only support one paired
+> controller at a time (confirmed in Home Assistant's own `homekit_controller`
+> docs) — HA and Apple Home **cannot** both stay paired to the M2
+> simultaneously. Procedure: note the M2's HomeKit pairing code first (sticker
+> on hub/box, or the Aqara Home app's hub settings), then unpair it from the
+> Apple Home app (unpair only, not a factory reset — this doesn't touch the
+> Zigbee network or the Aqara Home app), then pair it to HA via the "HomeKit
+> Device" integration. Apple Home/Siri access to those 5 entities is restored
+> afterwards through HA's own HomeKit Bridge (Phase 3) — the same re-exposure
+> path already planned for the Xiaomi/Tuya devices.
 
 > **Mi 360 firmware hack**: this is a device-level modification outside
 > Kubernetes/GitOps entirely — no manifest or HA config mitigates it. It can
@@ -184,9 +187,11 @@ Then push — Argo CD prunes the namespace, Deployment and PVC.
 1. ~~Does the core `xiaomi_miio` integration support `zhimi.heater.mc2a`?~~
    **Resolved** — used HACS `xiaomi_home` (cloud) instead; heater accepted and
    working.
-2. Will the Aqara Hub M2 accept a second simultaneous HomeKit controller
-   pairing (HA alongside Apple Home)? See the risk note above for the
-   fallback.
+2. ~~Will the Aqara Hub M2 accept a second simultaneous HomeKit controller
+   pairing (HA alongside Apple Home)?~~ **Resolved** — no. HomeKit accessories
+   only support one paired controller at a time, confirmed in Home Assistant's
+   own docs. The M2 must be unpaired from Apple Home before HA can pair to it;
+   see the risk note above for the full procedure.
 3. ~~Will the S20 respond to a local `xiaomi_miio`/`roborock` handshake?~~
    **Resolved** — HACS `xiaomi_home` (cloud) accepted the S20 directly; no
    local token extraction needed.

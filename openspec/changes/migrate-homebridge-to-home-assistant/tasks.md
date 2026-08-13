@@ -42,9 +42,12 @@ Add via *Settings → Devices & Services → Add Integration*. Credentials land 
 - [x] 3.4 HACS `xiaomi_home` — heater `zhimi.heater.mc2a` @ `192.168.0.50` —
       model accepted, working.
 - [x] 3.5 Tuya — 2 Smart Life switches via the app user-code / QR flow
-- [ ] 3.6 Aqara Hub M2 — add HomeKit Controller, pair using the hub's existing
-      HomeKit code. Verify all 5 sensors/buttons show up as entities. If
-      pairing is refused, see the risk note in design.md.
+- [ ] 3.6 Aqara Hub M2 — HomeKit only supports one paired controller at a
+      time. Note the HomeKit pairing code first (sticker on hub/box, or the
+      Aqara Home app's hub settings), then remove/unpair the M2 from the Apple
+      Home app (unpair only, not a factory reset). Add HA's "HomeKit Device"
+      integration and enter the code. Verify all 5 sensors/buttons show up as
+      entities. See design.md Decision #7.
 - [x] 3.7 Huawei Solar — add `huawei_solar`, point it at the dongle's LAN IP
       (Modbus TCP, default port 6607).
 - [x] 3.8 Mitsubishi AC — add MELCloud, sign in with the existing account.
@@ -75,16 +78,16 @@ Cosmetic only, no dependency on Phase 3 or anything after it. Requires the
 `huawei_solar` entities from Phase 2 to already be live.
 
 - [x] 5.1 HACS → Frontend → search Power Flow Card Plus → download.
-- [ ] 5.2 Confirm HACS auto-registered the Lovelace resource (Settings →
+- [x] 5.2 Confirm HACS auto-registered the Lovelace resource (Settings →
       Dashboards → Resources — enable Advanced Mode on your profile if the tab
       is hidden).
-- [ ] 5.3 Look up the real entity IDs (Developer Tools → States, filter
+- [x] 5.3 Look up the real entity IDs (Developer Tools → States, filter
       `huawei`) — the ones below are the integration's own documented
       defaults, not read from the live instance, and may differ (multi-device
       / custom-named setups get suffixed IDs).
-- [ ] 5.4 Add a card to a dashboard view with the starting config below, then
+- [x] 5.4 Add a card to a dashboard view with the starting config below, then
       correct entity IDs and flow direction as needed.
-- [ ] 5.5 Verify grid/battery arrows point the right way; add
+- [x] 5.5 Verify grid/battery arrows point the right way; add
       `invert_state: true` on whichever entity is backwards.
 
   ```yaml
@@ -112,9 +115,9 @@ Cosmetic only, no dependency on Phase 3 or anything after it. Requires the
 
 - [ ] 6.1 Enable the HomeKit Bridge integration with an explicit entity
       include-filter (do not bridge everything HA auto-creates).
-- [ ] 6.2 If the Aqara M2 refused a second controller pairing in Phase 2,
-      include its 5 entities in this filter too — same treatment as
-      Xiaomi/Tuya.
+- [ ] 6.2 Include the Aqara M2's 5 entities in this filter — unpairing it from
+      Apple Home in Phase 2 means this bridge is the only way Siri/Apple Home
+      see them again, same treatment as Xiaomi/Tuya.
 - [ ] 6.3 Pair the new bridge in the Apple Home app.
 - [ ] 6.4 Rebuild rooms, scenes and automations. Reuse the exact old accessory
       names so existing Siri phrases keep working.
