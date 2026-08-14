@@ -114,10 +114,16 @@ Cosmetic only, no dependency on Phase 3 or anything after it. Requires the
 ## 6. Phase 3 — HomeKit Bridge
 
 - [ ] 6.1 Enable the HomeKit Bridge integration with an explicit entity
-      include-filter (do not bridge everything HA auto-creates).
-- [ ] 6.2 Include the Aqara M2's 5 entities in this filter — unpairing it from
-      Apple Home in Phase 2 means this bridge is the only way Siri/Apple Home
-      see them again, same treatment as Xiaomi/Tuya.
+      include-filter — interactive devices only, not raw diagnostic sensors:
+      2× Xiaomi smart plugs, Xiaomi heater, Xiaomi Robot Vacuum S20, 2× Tuya
+      Smart Life switches, the Aqara M2's 5 sensors/buttons, Mitsubishi AC,
+      Mi 360 camera, and any interactive Huawei solar switches — excluding
+      solar power/voltage/current diagnostic sensors. This same set is reused
+      as the Assist-exposed entity list in the `add-conversational-ai-homepod`
+      change.
+- [ ] 6.2 The Aqara M2's 5 entities are in this filter because unpairing it
+      from Apple Home in Phase 2 means this bridge is the only way Siri/Apple
+      Home see them again — same treatment as Xiaomi/Tuya.
 - [ ] 6.3 Pair the new bridge in the Apple Home app.
 - [ ] 6.4 Rebuild rooms, scenes and automations. Reuse the exact old accessory
       names so existing Siri phrases keep working.

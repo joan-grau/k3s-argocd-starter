@@ -1,3 +1,6 @@
 {
-    "folder-color.pathColors": []
+    "folder-color.pathColors": [],
+    "chat.tools.terminal.autoApprove": {
+        "openspec": true
+    }
 }
