@@ -114,8 +114,12 @@ this phase runs, the Rollback procedure in design.md stops working for good
       `infrastructure/controllers/sealed-secrets/` from git. Also removed the
       5 now-orphaned `sealedsecret.yaml` files left over from Phase 3
       (agent-api, n8n, postgresql, redis, longhorn-system).
-- [ ] 5.2 Optionally delete the sealed-secrets key Secrets from the cluster
+- [x] 5.2 Optionally delete the sealed-secrets key Secrets from the cluster
       (`kubectl -n sealed-secrets delete secret -l sealedsecrets.bitnami.com/sealed-secrets-key`).
+      Turned out to be a no-op: ArgoCD's `prune: true` on the 5.1 push already
+      deleted the whole `sealed-secrets` namespace (Application, controller,
+      CRD, and all 4 key Secrets cascaded with it) — confirmed live
+      in-cluster 2026-08-17, nothing left to delete.
 - [x] 5.3 Update repo memory (`/memories/repo/longhorn-backup-dr.md`) — the
       "critical DR gap" note about the sealed-secrets key no longer applies
       once this is done.
