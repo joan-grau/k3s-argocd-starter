@@ -24,11 +24,11 @@ GitOps-managed agent platform built on top of the K3s cluster. Workflow-first, a
 | Agent runtime | FastAPI + LangGraph | `agents/platform/agent-api/` | LLM reasoning, tool execution |
 | State store | PostgreSQL 16 + pgvector | `agents/platform/postgresql/` | Checkpointer, Mem0 memories, n8n DB |
 | Cache | Redis 7 | `agents/platform/redis/` | Response cache, session locks |
-| Secrets | Bitnami Sealed Secrets | `infrastructure/controllers/sealed-secrets/` | Encrypted secrets in git |
+| Secrets | External Secrets Operator + Doppler | `infrastructure/controllers/external-secrets/` | Secrets synced from Doppler, nothing sensitive in git |
 
-> Secret management is migrating to External Secrets Operator + Doppler — see
+> Migrated from Bitnami Sealed Secrets — see
 > [`openspec/changes/migrate-sealed-secrets-to-doppler/`](../openspec/changes/migrate-sealed-secrets-to-doppler/proposal.md)
-> for the in-progress change.
+> for the migration history.
 
 ### Services
 

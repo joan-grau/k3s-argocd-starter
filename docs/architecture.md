@@ -37,7 +37,7 @@ k3s-argocd-starter/
 │   ├── controllers/
 │   │   ├── argocd/          ← Argo CD itself (Helm + Kustomize)
 │   │   ├── cert-manager/    ← TLS bootstrap (sync-wave: -10, deploys FIRST)
-│   │   └── sealed-secrets/  ← Bitnami Sealed Secrets controller (Helm)
+│   │   └── external-secrets/ ← External Secrets Operator (Doppler backend)
 │   ├── networking/
 │   │   ├── cilium/          ← CNI, L2 policy, IP pool
 │   │   ├── gateway/         ← GatewayClass + Gateway (*.lan listeners)
@@ -98,7 +98,7 @@ Each subdirectory becomes an Argo CD `Application`. The namespace is derived fro
 | Wave | Scope |
 |------|-------|
 | -10 | cert-manager (TLS bootstrap — deploys first) |
-| -2 | Infrastructure (networking, storage, controllers, sealed-secrets) |
+| -2 | Infrastructure (networking, storage, controllers) |
 | 0 | Monitoring |
 | 1 | User applications |
 | 2 | Agent platform and domain agents |
@@ -258,4 +258,5 @@ kubectl logs -n <namespace> deployment/<name>
 | `service.yaml` | ClusterIP service |
 | `pvc.yaml` | Persistent volume claim |
 | `certificate.yaml` | cert-manager Certificate resource |
-| `sealedsecret.yaml` | Bitnami Sealed Secret (GitOps-safe) |
+| `secretstore.yaml` | External Secrets Operator `SecretStore` (Doppler backend) |
+| `externalsecret.yaml` | External Secrets Operator `ExternalSecret` (syncs Doppler → k8s Secret) |

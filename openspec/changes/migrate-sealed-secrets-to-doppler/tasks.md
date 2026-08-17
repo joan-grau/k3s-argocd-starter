@@ -109,11 +109,13 @@ is reliable in practice, across real rotations/restarts/node reboots." Once
 this phase runs, the Rollback procedure in design.md stops working for good
 (the sealed-secrets private key is gone) — treat it as a one-way door.
 
-- [ ] 5.1 Once all 5 apps are migrated, verified, and have run stably on
+- [x] 5.1 Once all 5 apps are migrated, verified, and have run stably on
       Doppler/ESO for an extended period, delete
-      `infrastructure/controllers/sealed-secrets/` from git.
+      `infrastructure/controllers/sealed-secrets/` from git. Also removed the
+      5 now-orphaned `sealedsecret.yaml` files left over from Phase 3
+      (agent-api, n8n, postgresql, redis, longhorn-system).
 - [ ] 5.2 Optionally delete the sealed-secrets key Secrets from the cluster
       (`kubectl -n sealed-secrets delete secret -l sealedsecrets.bitnami.com/sealed-secrets-key`).
-- [ ] 5.3 Update repo memory (`/memories/repo/longhorn-backup-dr.md`) — the
+- [x] 5.3 Update repo memory (`/memories/repo/longhorn-backup-dr.md`) — the
       "critical DR gap" note about the sealed-secrets key no longer applies
       once this is done.
