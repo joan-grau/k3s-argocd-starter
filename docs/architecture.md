@@ -61,7 +61,7 @@ k3s-argocd-starter/
 │   ├── adguard-home/        ← Network-wide DNS ad blocker
 │   ├── headlamp/            ← K8s dashboard (Helm)
 │   ├── hello-world/         ← Minimal echo server (test app)
-│   ├── homebridge/          ← Apple HomeKit bridge
+│   ├── home-assistant/      ← open-source home automation platform 
 │   ├── homepage-dashboard/  ← Homepage dashboard
 │   ├── it-tools/            ← Developer tools collection
 │   ├── nginx/               ← Static site
@@ -132,12 +132,12 @@ LAN      → DNS rewrite (AdGuard) → 192.168.0.35 → Cilium Gateway → HTTPR
 - `argocd.pascualgrau.com` → argocd-server
 - `grafana.pascualgrau.com` → prometheus-grafana
 - `headlamp.pascualgrau.com` → headlamp
-- `homebridge.pascualgrau.com` → homebridge
+- `homeassistant.pascualgrau.com` → home-assistant
 
 ### Local Services (via Gateway `*.lan`)
 
 - `argocd.lan`, `grafana.lan`, `prometheus.lan`, `longhorn.lan`, `hubble.lan`
-- `hello-world.lan`, `adguard.lan`, `homebridge.lan`, `rsshub.lan`, `homepage.lan`, `it-tools.lan`
+- `hello-world.lan`, `adguard.lan`, `homeassistant.lan`, `rsshub.lan`, `homepage.lan`, `it-tools.lan`
 - `n8n.lan`, `agent-api.lan`
 
 ---

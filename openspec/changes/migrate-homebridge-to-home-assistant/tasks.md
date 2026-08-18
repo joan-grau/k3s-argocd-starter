@@ -2,8 +2,8 @@
 
 - [x] 1.1 Rotate the Tuya / Smart Life account password and the Tuya IoT API
       secret. They were exposed in plaintext while planning this migration.
-- [ ] 1.2 Longhorn snapshot of the `homebridge-config` volume.
-- [ ] 1.3 Copy the Homebridge `config.json` off the volume to a safe location
+- [x] 1.2 Longhorn snapshot of the `homebridge-config` volume.
+- [x] 1.3 Copy the Homebridge `config.json` off the volume to a safe location
       outside the repo.
 - [x] 1.4 Screenshot every room, scene and automation in the Apple Home app —
       re-pairing loses all of it and there is no export.
@@ -42,7 +42,7 @@ Add via *Settings → Devices & Services → Add Integration*. Credentials land 
 - [x] 3.4 HACS `xiaomi_home` — heater `zhimi.heater.mc2a` @ `192.168.0.50` —
       model accepted, working.
 - [x] 3.5 Tuya — 2 Smart Life switches via the app user-code / QR flow
-- [ ] 3.6 Aqara Hub M2 — HomeKit only supports one paired controller at a
+- [x] 3.6 Aqara Hub M2 — HomeKit only supports one paired controller at a
       time. Note the HomeKit pairing code first (sticker on hub/box, or the
       Aqara Home app's hub settings), then remove/unpair the M2 from the Apple
       Home app (unpair only, not a factory reset). Add HA's "HomeKit Device"
@@ -53,7 +53,7 @@ Add via *Settings → Devices & Services → Add Integration*. Credentials land 
 - [x] 3.8 Mitsubishi AC — add MELCloud, sign in with the existing account.
 - [x] 3.9 Vacuum S20 — HACS `xiaomi_home` (same Mi account integration as
       plugs/heater) — working.
-- [ ] 3.10 Verify every entity actually toggles from the HA UI **before**
+- [x] 3.10 Verify every entity actually toggles from the HA UI **before**
       touching HomeKit.
 
 ## 4. Phase 2b — Mi 360 camera (isolated, higher risk)
@@ -121,23 +121,28 @@ Cosmetic only, no dependency on Phase 3 or anything after it. Requires the
       solar power/voltage/current diagnostic sensors. This same set is reused
       as the Assist-exposed entity list in the `add-conversational-ai-homepod`
       change.
-- [ ] 6.2 The Aqara M2's 5 entities are in this filter because unpairing it
+- [x] 6.2 The Aqara M2's 5 entities are in this filter because unpairing it
       from Apple Home in Phase 2 means this bridge is the only way Siri/Apple
       Home see them again — same treatment as Xiaomi/Tuya.
-- [ ] 6.3 Pair the new bridge in the Apple Home app.
-- [ ] 6.4 Rebuild rooms, scenes and automations. Reuse the exact old accessory
+- [x] 6.3 Pair the new bridge in the Apple Home app. Initially failed with
+      "Bridge is unresponsive" after a few minutes — the node's `ufw`
+      firewall had no allow rule for the bridge's actual HAP port
+      (`21064/tcp`, auto-assigned, not the `21063` planned in design.md).
+      Fixed with `sudo ufw allow 21064/tcp`; see design.md "Implementation
+      notes (Phase 3)".
+- [x] 6.4 Rebuild rooms, scenes and automations. Reuse the exact old accessory
       names so existing Siri phrases keep working.
-- [ ] 6.5 Test from the HomePod specifically, not just the phone.
+- [x] 6.5 Test from the HomePod specifically, not just the phone.
 
 ## 7. Phase 4 — Decommission Homebridge
 
-- [ ] 7.1 Remove the Homebridge bridge from the Apple Home app.
+- [x] 7.1 Remove the Homebridge bridge from the Apple Home app.
 - [ ] 7.2 Confirm the Longhorn snapshot from Phase 0 exists — deleting the
       Argo CD app prunes the PVC.
-- [ ] 7.3 Delete `my-apps/homebridge/`.
-- [ ] 7.4 Remove the `homebridge.pascualgrau.com` entry from
+- [x] 7.3 Delete `my-apps/homebridge/`.
+- [x] 7.4 Remove the `homebridge.pascualgrau.com` entry from
       `infrastructure/networking/cloudflared/config.yaml`.
-- [ ] 7.5 Update `docs/architecture.md`: drop Homebridge from the `my-apps/`
+- [x] 7.5 Update `docs/architecture.md`: drop Homebridge from the `my-apps/`
       tree listing, add Home Assistant.
 
 ## 8. Phase 5 — Public access + hardening

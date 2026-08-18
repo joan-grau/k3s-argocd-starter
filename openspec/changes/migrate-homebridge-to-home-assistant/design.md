@@ -36,7 +36,7 @@ Home Assistant's replacement integrations are verified working.
 | 4 | HACS / custom components | **Installed** — pinned via a GitOps init container (`install-hacs`, HACS `2.0.5`) cloning into `/config/custom_components/hacs` on every pod start. No longer gated on the heater/vacuum fallback; available immediately for any device that needs it |
 | 5 | Public access | Cloudflare Tunnel, password + MFA only — **no Cloudflare Access** (breaks the HA Companion App's native API/WebSocket calls, which can't complete Access's browser-based login redirect). Hardening: `ip_ban_enabled: true`, `login_attempts_threshold: 5`, MFA |
 | 6 | Homebridge teardown | Delete after cutover, keep a documented record (this change) + a Longhorn snapshot |
-| — | Cutover style | Parallel run. Host ports do not collide: Homebridge `8581`/`51333` vs HA `8123`/`21063` |
+| — | Cutover style | Parallel run. Host ports do not collide: Homebridge `8581`/`51333` vs HA `8123`/`21064` (HomeKit port auto-assigned by the integration, not fixed at the `21063` originally planned — see Phase 3 implementation notes) |
 | — | Manifest style | Raw manifests + Kustomize, same as `my-apps/homebridge` and `my-apps/adguard-home` |
 | 7 | Aqara Hub M2 path | **HomeKit Controller** (core) — HomeKit accessories only support one paired controller at a time, so the M2 is unpaired from Apple Home first, then paired to HA; HA's own HomeKit Bridge (Phase 3) re-exposes the 5 entities back to Apple Home/Siri afterwards. No hardware changes, no Zigbee re-pairing. Rejected: Zigbee USB coordinator (needs USB passthrough, explicitly ruled out) and the community `AqaraGateway` HACS integration (local, not cloud, but requires enabling telnet and — on current M2 firmware — opening the case to flash modified firmware via UART; same risk class as the Mi 360 camera hack) |
 | 8 | Solar inverter integration | **`huawei_solar`** (HACS, local Modbus TCP) — the dongle is LAN-reachable, no cloud needed |
@@ -143,6 +143,27 @@ kubectl kustomize my-apps/home-assistant
 
 Renders cleanly; the Deployment volume correctly references the hashed
 ConfigMap name.
+
+## Implementation notes (Phase 3)
+
+HomeKit Bridge pairing initially failed — the Apple Home app found "HASS
+Bridge" fine via mDNS (QR scan succeeded instantly), but then sat for a few
+minutes before failing with "Bridge is unresponsive". Same root cause class as
+the `ufw` gap below (Phase 5), just a different port:
+
+- mDNS discovery (UDP 5353, already allowed) only gets the Home app as far as
+  *seeing* the bridge. Actual pairing needs a direct TCP connection to the
+  bridge's advertised HAP port — a separate channel, not covered by the mDNS
+  rule.
+- The HomeKit Bridge integration doesn't use a fixed port; it auto-assigns
+  one starting at 21063 and walking up if taken. It landed on `21064`, not
+  the `21063` assumed in the Decisions table above, and `21064` had no `ufw`
+  rule — pairing silently timed out instead of failing fast.
+- Fixed with `sudo ufw allow 21064/tcp` on the node. Pairing succeeded
+  immediately after.
+- The port isn't pinned, so removing and re-adding the integration could land
+  on a different one next time — re-check Settings → Devices & Services for
+  the actual port before assuming `21064` still applies.
 
 ## Implementation notes (Phase 5)
 
