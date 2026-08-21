@@ -15,8 +15,6 @@
 - [x] 1.8 Extract the Xiaomi Robot Vacuum S20's local IP + miIO token (Xiaomi
       Cloud Tokens Extractor). Progress: local IP identified (`192.168.0.23`);
       token extracted and kept outside this repo.
-- [ ] 1.9 Identify the Mi 360 camera's exact hardware/firmware revision and
-      confirm a matching RTSP hack guide exists before attempting it.
 
 ## 2. Phase 1 — Deploy
 
@@ -113,7 +111,7 @@ Cosmetic only, no dependency on Phase 3 or anything after it. Requires the
 
 ## 6. Phase 3 — HomeKit Bridge
 
-- [ ] 6.1 Enable the HomeKit Bridge integration with an explicit entity
+- [x] 6.1 Enable the HomeKit Bridge integration with an explicit entity
       include-filter — interactive devices only, not raw diagnostic sensors:
       2× Xiaomi smart plugs, Xiaomi heater, Xiaomi Robot Vacuum S20, 2× Tuya
       Smart Life switches, the Aqara M2's 5 sensors/buttons, Mitsubishi AC,
